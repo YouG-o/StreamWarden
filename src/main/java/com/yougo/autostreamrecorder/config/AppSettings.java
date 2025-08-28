@@ -10,8 +10,17 @@ import java.io.IOException;
 
 public class AppSettings {
     
-    private static final String SETTINGS_FILE = "settings.json";
+    private static final String CONFIG_DIR = "config";
+    private static final String SETTINGS_FILE = CONFIG_DIR + File.separator + "settings.json";
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    
+    // Ensure config directory exists
+    static {
+        File configDir = new File(CONFIG_DIR);
+        if (!configDir.exists()) {
+            configDir.mkdirs();
+        }
+    }
     
     // Default settings
     private String outputDirectory = System.getProperty("user.home") + File.separator + "AutoStreamRecorder";

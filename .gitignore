@@ -79,3 +79,5 @@ config.json
 
 # JavaFX specific
 out/
+
+config/
