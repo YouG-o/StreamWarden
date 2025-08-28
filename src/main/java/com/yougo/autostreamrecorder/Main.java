@@ -1,5 +1,7 @@
 package com.yougo.autostreamrecorder;
 
+import com.yougo.autostreamrecorder.ui.AddChannelDialog;
+import java.util.Optional;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -102,11 +104,10 @@ public class Main extends Application {
     }
     
     private void showAddChannelDialog() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Add Channel");
-        alert.setHeaderText("Add Channel Dialog");
-        alert.setContentText("This dialog will be implemented later.");
-        alert.showAndWait();
+        Optional<ChannelEntry> result = AddChannelDialog.showDialog();
+        result.ifPresent(channelEntry -> {
+            channelList.add(channelEntry);
+        });
     }
     
     private void showSettingsDialog() {
