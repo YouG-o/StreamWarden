@@ -1,6 +1,9 @@
 package com.yougo.autostreamrecorder;
 
+import com.yougo.autostreamrecorder.config.AppSettings;
 import com.yougo.autostreamrecorder.config.ChannelConfig;
+import com.yougo.autostreamrecorder.core.MonitoringService;
+import com.yougo.autostreamrecorder.core.StreamMonitor;
 import com.yougo.autostreamrecorder.ui.AddChannelDialog;
 import java.util.Optional;
 import javafx.application.Application;
@@ -12,16 +15,38 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class Main extends Application {
     
     private TableView<ChannelEntry> channelTable;
     private ObservableList<ChannelEntry> channelList;
+    private TextArea logArea;
+    private MonitoringService monitoringService;
+    private AppSettings appSettings;
 
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("AutoStreamRecorder");
+        
+        // Load settings
+        appSettings = AppSettings.load();
+        
+        // Initialize monitoring service
+        monitoringService = new MonitoringService(appSettings);
+        monitoringService.setStatusCallback(new StreamMonitor.StatusCallback() {
+            @Override
+            public void onStatusChanged(ChannelEntry channel, String status) {
+                // Status is already updated in the channel entry via Platform.runLater in StreamMonitor
+                channelTable.refresh();
+            }
+            
+            @Override
+            public void onLogMessage(String message) {
+                logArea.appendText(message + "\n");
+            }
+        });
         
         // Create main layout
         BorderPane root = new BorderPane();
@@ -30,17 +55,23 @@ public class Main extends Application {
         HBox toolbar = createToolbar();
         root.setTop(toolbar);
         
-        // Create channel table
-        channelTable = createChannelTable();
-        root.setCenter(channelTable);
+        // Create center content (table + logs)
+        VBox centerContent = createCenterContent();
+        root.setCenter(centerContent);
         
-        // Load saved channels
+        // Load saved channels and start monitoring
         loadChannelsFromConfig();
+        startAutoMonitoring();
         
         // Create scene
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, 1000, 700);
         primaryStage.setScene(scene);
         primaryStage.show();
+        
+        // Shutdown monitoring service when closing
+        primaryStage.setOnCloseRequest(e -> {
+            monitoringService.shutdown();
+        });
     }
     
     private HBox createToolbar() {
@@ -51,14 +82,36 @@ public class Main extends Application {
         Button addChannelBtn = new Button("Add Channel");
         Button settingsBtn = new Button("Settings");
         Button removeChannelBtn = new Button("Remove Selected");
+        Button clearLogsBtn = new Button("Clear Logs");
         
         // Add button actions
         addChannelBtn.setOnAction(e -> showAddChannelDialog());
         settingsBtn.setOnAction(e -> showSettingsDialog());
         removeChannelBtn.setOnAction(e -> removeSelectedChannel());
+        clearLogsBtn.setOnAction(e -> logArea.clear());
         
-        toolbar.getChildren().addAll(addChannelBtn, removeChannelBtn, new Separator(), settingsBtn);
+        toolbar.getChildren().addAll(addChannelBtn, removeChannelBtn, new Separator(), 
+                                    clearLogsBtn, new Separator(), settingsBtn);
         return toolbar;
+    }
+    
+    private VBox createCenterContent() {
+        VBox centerContent = new VBox(10);
+        centerContent.setPadding(new Insets(10));
+        
+        // Channel table
+        channelTable = createChannelTable();
+        
+        // Log area
+        Label logLabel = new Label("Activity Logs:");
+        logArea = new TextArea();
+        logArea.setEditable(false);
+        logArea.setPrefRowCount(8);
+        logArea.setWrapText(true);
+        logArea.setStyle("-fx-font-family: monospace;");
+        
+        centerContent.getChildren().addAll(channelTable, logLabel, logArea);
+        return centerContent;
     }
     
     private TableView<ChannelEntry> createChannelTable() {
@@ -83,7 +136,7 @@ public class Main extends Application {
         
         TableColumn<ChannelEntry, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
-        statusCol.setPrefWidth(80);
+        statusCol.setPrefWidth(100);
         
         TableColumn<ChannelEntry, String> qualityCol = new TableColumn<>("Quality");
         qualityCol.setCellValueFactory(new PropertyValueFactory<>("quality"));
@@ -116,11 +169,28 @@ public class Main extends Application {
         ChannelConfig.saveChannels(channelDataList);
     }
     
+    /**
+     * Start monitoring for all active channels
+     */
+    private void startAutoMonitoring() {
+        if (appSettings.isAutoStartMonitoring()) {
+            monitoringService.startAllActiveChannels(channelList);
+            logArea.appendText("[System] Auto-monitoring started for active channels\n");
+        }
+    }
+    
     private void showAddChannelDialog() {
         Optional<ChannelEntry> result = AddChannelDialog.showDialog();
         result.ifPresent(channelEntry -> {
             channelList.add(channelEntry);
             saveChannelsToConfig();
+            
+            // If the new channel is active, start monitoring it immediately
+            if (channelEntry.getIsActive()) {
+                monitoringService.startMonitoring(channelEntry, appSettings.getDefaultCheckInterval());
+                logArea.appendText(String.format("[System] Started monitoring %s: %s\n", 
+                    channelEntry.getPlatform(), channelEntry.getChannelName()));
+            }
         });
     }
     
@@ -135,6 +205,13 @@ public class Main extends Application {
     private void removeSelectedChannel() {
         ChannelEntry selected = channelTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
+            // Stop monitoring if it's currently being monitored
+            if (monitoringService.isMonitoring(selected)) {
+                monitoringService.stopMonitoring(selected);
+                logArea.appendText(String.format("[System] Stopped monitoring %s: %s\n", 
+                    selected.getPlatform(), selected.getChannelName()));
+            }
+            
             channelList.remove(selected);
             saveChannelsToConfig();
         } else {

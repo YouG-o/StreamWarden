@@ -29,9 +29,11 @@ public class AppSettings {
     private String defaultQuality = "best";
     private boolean minimizeToTray = false;
     private boolean showNotifications = true;
-    // Tool paths - point to bundled executables
-    private String streamlinkPath = getBundledStreamlinkPath();
-    private String ytDlpPath = getBundledYtDlpPath();
+
+    // Tool paths - use system PATH for now (development phase)
+    private String streamlinkPath = "streamlink";
+    private String ytDlpPath = "yt-dlp";
+    
     
     /**
      * Load settings from JSON file
@@ -128,29 +130,5 @@ public class AppSettings {
     
     public void setYtDlpPath(String ytDlpPath) {
         this.ytDlpPath = ytDlpPath;
-    }
-    
-    /**
-     * Get the path to bundled streamlink executable based on OS
-     */
-    private static String getBundledStreamlinkPath() {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("win")) {
-            return "bin" + File.separator + "windows" + File.separator + "streamlink.exe";
-        } else {
-            return "bin" + File.separator + "linux" + File.separator + "streamlink";
-        }
-    }
-    
-    /**
-     * Get the path to bundled yt-dlp executable based on OS
-     */
-    private static String getBundledYtDlpPath() {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("win")) {
-            return "bin" + File.separator + "windows" + File.separator + "yt-dlp.exe";
-        } else {
-            return "bin" + File.separator + "linux" + File.separator + "yt-dlp";
-        }
     }
 }
