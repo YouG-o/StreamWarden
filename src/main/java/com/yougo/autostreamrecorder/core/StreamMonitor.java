@@ -21,6 +21,9 @@ public class StreamMonitor implements Runnable {
     private final AtomicBoolean recording = new AtomicBoolean(false);
     private final int checkInterval;
     
+    // Add reference to the current recording process
+    private volatile Process currentRecordingProcess = null;
+    
     // Callback interfaces for UI updates
     public interface StatusCallback {
         void onStatusChanged(ChannelEntry channel, String status);
@@ -142,6 +145,7 @@ public class StreamMonitor implements Runnable {
                     channelEntry.getPlatform(), outputDir.getAbsolutePath(), File.separator, outputFile));
                 
                 Process process = pb.start();
+                currentRecordingProcess = process; // Store reference to current process
                 
                 // Read process output
                 try (BufferedReader reader = new BufferedReader(
@@ -169,6 +173,7 @@ public class StreamMonitor implements Runnable {
                 updateStatus("Error");
             } finally {
                 recording.set(false);
+                currentRecordingProcess = null; // Clear process reference
             }
         });
         
@@ -253,6 +258,14 @@ public class StreamMonitor implements Runnable {
     public void stop() {
         running.set(false);
         recording.set(false);
+        
+        // Force stop the current recording process if it exists
+        if (currentRecordingProcess != null && currentRecordingProcess.isAlive()) {
+            logMessage(String.format("[%s] Forcing stop of recording process for: %s", 
+                channelEntry.getPlatform(), channelEntry.getChannelName()));
+            currentRecordingProcess.destroyForcibly();
+        }
+        
         updateStatus(""); // Clear status when stopped
     }
     

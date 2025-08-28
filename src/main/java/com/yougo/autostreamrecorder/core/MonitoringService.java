@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class MonitoringService {
     
@@ -81,8 +82,34 @@ public class MonitoringService {
     }
     
     public void shutdown() {
-        stopAllMonitoring();
+        logMessage("Shutting down monitoring service...");
+        
+        // Stop all monitors and force stop their recording processes
+        for (StreamMonitor monitor : activeMonitors.values()) {
+            monitor.stop();
+        }
+        
+        activeMonitors.clear();
+        
+        // Shutdown executor service
         executorService.shutdown();
+        try {
+            // Wait a bit for tasks to terminate
+            if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                logMessage("Executor did not terminate gracefully, forcing shutdown...");
+                executorService.shutdownNow();
+                // Wait a bit more
+                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                    logMessage("Executor did not terminate after forced shutdown!");
+                }
+            }
+        } catch (InterruptedException e) {
+            logMessage("Shutdown interrupted, forcing immediate shutdown...");
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        
+        logMessage("Monitoring service shutdown complete.");
     }
     
     private String getChannelKey(ChannelEntry channelEntry) {
@@ -91,5 +118,9 @@ public class MonitoringService {
     
     public Map<String, StreamMonitor> getActiveMonitors() {
         return new ConcurrentHashMap<>(activeMonitors);
+    }
+    
+    private void logMessage(String message) {
+        System.out.println(message);
     }
 }

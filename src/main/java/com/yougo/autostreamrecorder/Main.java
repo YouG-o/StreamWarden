@@ -6,17 +6,25 @@ import com.yougo.autostreamrecorder.core.MonitoringService;
 import com.yougo.autostreamrecorder.core.StreamMonitor;
 import com.yougo.autostreamrecorder.ui.AddChannelDialog;
 import java.util.Optional;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
+import javafx.event.Event;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class Main extends Application {
     
@@ -70,7 +78,11 @@ public class Main extends Application {
         
         // Shutdown monitoring service when closing
         primaryStage.setOnCloseRequest(e -> {
-            monitoringService.shutdown();
+            // Consume the event to prevent immediate closure
+            e.consume();
+            
+            // Show shutdown modal
+            showShutdownModal(primaryStage);
         });
     }
     
@@ -260,6 +272,97 @@ public class Main extends Application {
             alert.setContentText("Please select a channel to remove.");
             alert.showAndWait();
         }
+    }
+
+    /**
+     * Show shutdown modal while properly closing active recordings
+     */
+    private void showShutdownModal(Stage primaryStage) {
+        // Create modal dialog
+        Stage shutdownStage = new Stage();
+        shutdownStage.initModality(Modality.APPLICATION_MODAL);
+        shutdownStage.initOwner(primaryStage);
+        shutdownStage.setTitle("Closing Application");
+        shutdownStage.setResizable(false);
+        
+        // Prevent user from closing this modal
+        shutdownStage.setOnCloseRequest(Event::consume);
+        
+        // Create content
+        VBox content = new VBox(20);
+        content.setPadding(new Insets(30));
+        content.setAlignment(Pos.CENTER);
+        content.setStyle("-fx-background-color: white;");
+        
+        // Progress indicator
+        ProgressIndicator progressIndicator = new ProgressIndicator();
+        progressIndicator.setProgress(-1); // Indeterminate progress
+        
+        // Status label
+        Label statusLabel = new Label("Stopping active recordings...");
+        statusLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
+        
+        // Warning label
+        Label warningLabel = new Label("Please wait, do not force close the application.");
+        warningLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666; -fx-font-style: italic;");
+        
+        content.getChildren().addAll(progressIndicator, statusLabel, warningLabel);
+        
+        Scene scene = new Scene(content, 350, 200);
+        shutdownStage.setScene(scene);
+        shutdownStage.show();
+        
+        // Center the modal on the parent window
+        shutdownStage.setX(primaryStage.getX() + (primaryStage.getWidth() - shutdownStage.getWidth()) / 2);
+        shutdownStage.setY(primaryStage.getY() + (primaryStage.getHeight() - shutdownStage.getHeight()) / 2);
+        
+        // Perform shutdown in background thread
+        Task<Void> shutdownTask = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                // Update status
+                Platform.runLater(() -> statusLabel.setText("Stopping monitoring services..."));
+                
+                // Shutdown monitoring service
+                monitoringService.shutdown();
+                
+                // Update status
+                Platform.runLater(() -> statusLabel.setText("Finalizing shutdown..."));
+                
+                // Small delay to ensure everything is properly closed
+                Thread.sleep(1000);
+                
+                return null;
+            }
+            
+            @Override
+            protected void succeeded() {
+                Platform.runLater(() -> {
+                    shutdownStage.close();
+                    primaryStage.close();
+                });
+            }
+            
+            @Override
+            protected void failed() {
+                Platform.runLater(() -> {
+                    statusLabel.setText("Shutdown completed with warnings.");
+                    statusLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #e74c3c;");
+                    
+                    // Still close the application after a short delay
+                    Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(2), event -> {
+                        shutdownStage.close();
+                        primaryStage.close();
+                    }));
+                    timeline.play();
+                });
+            }
+        };
+        
+        // Run shutdown task
+        Thread shutdownThread = new Thread(shutdownTask);
+        shutdownThread.setDaemon(true);
+        shutdownThread.start();
     }
 
     public static void main(String[] args) {
