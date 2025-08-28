@@ -263,10 +263,60 @@ public class StreamMonitor implements Runnable {
         if (currentRecordingProcess != null && currentRecordingProcess.isAlive()) {
             logMessage(String.format("[%s] Forcing stop of recording process for: %s", 
                 channelEntry.getPlatform(), channelEntry.getChannelName()));
-            currentRecordingProcess.destroyForcibly();
+            
+            // First try graceful termination
+            currentRecordingProcess.destroy();
+            
+            try {
+                // Wait a short time for graceful shutdown
+                boolean terminated = currentRecordingProcess.waitFor(2, java.util.concurrent.TimeUnit.SECONDS);
+                
+                if (!terminated) {
+                    logMessage(String.format("[%s] Process did not terminate gracefully, forcing kill...", 
+                        channelEntry.getPlatform()));
+                    
+                    // Force kill the process tree (especially important for Twitch streams)
+                    forceKillProcessTree(currentRecordingProcess);
+                }
+            } catch (InterruptedException e) {
+                logMessage(String.format("[%s] Interrupted while waiting for process termination", 
+                    channelEntry.getPlatform()));
+                forceKillProcessTree(currentRecordingProcess);
+                Thread.currentThread().interrupt();
+            }
         }
         
         updateStatus(""); // Clear status when stopped
+    }
+    
+    /**
+     * Force kill process tree to ensure all child processes (especially for Twitch) are terminated
+     */
+    private void forceKillProcessTree(Process process) {
+        try {
+            // Get the process handle
+            ProcessHandle processHandle = process.toHandle();
+            
+            // Kill all descendants first
+            processHandle.descendants().forEach(ph -> {
+                logMessage(String.format("[%s] Killing child process PID: %d", 
+                    channelEntry.getPlatform(), ph.pid()));
+                ph.destroyForcibly();
+            });
+            
+            // Then kill the main process
+            processHandle.destroyForcibly();
+            
+            logMessage(String.format("[%s] Process tree terminated for: %s", 
+                channelEntry.getPlatform(), channelEntry.getChannelName()));
+            
+        } catch (Exception e) {
+            logMessage(String.format("[%s] Error killing process tree: %s", 
+                channelEntry.getPlatform(), e.getMessage()));
+            
+            // Fallback: try the old method
+            process.destroyForcibly();
+        }
     }
     
     public boolean isRunning() {
