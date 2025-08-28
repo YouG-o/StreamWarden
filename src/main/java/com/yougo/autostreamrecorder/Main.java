@@ -1,5 +1,6 @@
 package com.yougo.autostreamrecorder;
 
+import com.yougo.autostreamrecorder.config.ChannelConfig;
 import com.yougo.autostreamrecorder.ui.AddChannelDialog;
 import java.util.Optional;
 import javafx.application.Application;
@@ -33,6 +34,9 @@ public class Main extends Application {
         channelTable = createChannelTable();
         root.setCenter(channelTable);
         
+        // Load saved channels
+        loadChannelsFromConfig();
+        
         // Create scene
         Scene scene = new Scene(root, 800, 600);
         primaryStage.setScene(scene);
@@ -48,7 +52,7 @@ public class Main extends Application {
         Button settingsBtn = new Button("Settings");
         Button removeChannelBtn = new Button("Remove Selected");
         
-        // Add button actions (placeholder for now)
+        // Add button actions
         addChannelBtn.setOnAction(e -> showAddChannelDialog());
         settingsBtn.setOnAction(e -> showSettingsDialog());
         removeChannelBtn.setOnAction(e -> removeSelectedChannel());
@@ -92,21 +96,31 @@ public class Main extends Application {
         channelList = FXCollections.observableArrayList();
         table.setItems(channelList);
         
-        // Add some sample data for testing
-        addSampleData();
-        
         return table;
     }
     
-    private void addSampleData() {
-        channelList.add(new ChannelEntry("YouTube", "ExampleChannel", "https://youtube.com/@example/live", true, "Offline", "best"));
-        channelList.add(new ChannelEntry("Twitch", "TestStreamer", "https://twitch.tv/teststreamer", true, "Online", "720p"));
+    /**
+     * Load channels from JSON configuration file
+     */
+    private void loadChannelsFromConfig() {
+        var channelDataList = ChannelConfig.loadChannels();
+        var loadedChannels = ChannelConfig.toObservableList(channelDataList);
+        channelList.addAll(loadedChannels);
+    }
+    
+    /**
+     * Save current channels to JSON configuration file
+     */
+    private void saveChannelsToConfig() {
+        var channelDataList = ChannelConfig.fromObservableList(channelList);
+        ChannelConfig.saveChannels(channelDataList);
     }
     
     private void showAddChannelDialog() {
         Optional<ChannelEntry> result = AddChannelDialog.showDialog();
         result.ifPresent(channelEntry -> {
             channelList.add(channelEntry);
+            saveChannelsToConfig();
         });
     }
     
@@ -122,6 +136,7 @@ public class Main extends Application {
         ChannelEntry selected = channelTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
             channelList.remove(selected);
+            saveChannelsToConfig();
         } else {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("No Selection");

@@ -17,8 +17,17 @@ import java.util.List;
 
 public class ChannelConfig {
     
-    private static final String CHANNELS_FILE = "channels.json";
+    private static final String CONFIG_DIR = "config";
+    private static final String CHANNELS_FILE = CONFIG_DIR + File.separator + "channels.json";
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    
+    // Ensure config directory exists
+    static {
+        File configDir = new File(CONFIG_DIR);
+        if (!configDir.exists()) {
+            configDir.mkdirs();
+        }
+    }
     
     /**
      * Data class for JSON serialization of channel entries
