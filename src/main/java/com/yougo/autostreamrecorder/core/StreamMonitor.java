@@ -206,22 +206,25 @@ public class StreamMonitor implements Runnable {
     }
     
     private String generateOutputFilename() {
-        String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddMMyy"));
+        // Format: plateforme_YYMMDDHHMMSS_ChannelName_StreamName.mp4
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss"));
+        String platform = sanitizeFilename(channelEntry.getPlatform());
         String channelName = sanitizeFilename(channelEntry.getChannelName());
-        String platform = channelEntry.getPlatform().toLowerCase();
         
         // Try to get stream title if possible (simplified for now)
-        String streamTitle = "stream";
+        String streamTitle = "stream"; // TODO: Extract actual stream title from stream metadata
+        String sanitizedStreamTitle = sanitizeFilename(streamTitle);
         
-        return String.format("%s-%s-%s-%s-LIVE.ts", 
-            datePart, platform, channelName, sanitizeFilename(streamTitle));
+        return String.format("%s_%s_%s_%s.ts", 
+            platform, timestamp, channelName, sanitizedStreamTitle);
     }
     
     private String sanitizeFilename(String filename) {
         if (filename == null || filename.trim().isEmpty()) {
             return "unknown";
         }
-        return filename.replaceAll("[^\\w\\-]", "_").replaceAll("_+", "_").trim();
+        // Replace any non-alphanumeric characters with underscores, avoid multiple underscores
+        return filename.replaceAll("[^\\w]", "_").replaceAll("_+", "_").trim();
     }
     
     private void updateStatus(String status) {
