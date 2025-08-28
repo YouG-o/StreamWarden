@@ -256,15 +256,44 @@ public class Main extends Application {
     private void removeSelectedChannel() {
         ChannelEntry selected = channelTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            // Stop monitoring if it's currently being monitored
-            if (monitoringService.isMonitoring(selected)) {
-                monitoringService.stopMonitoring(selected);
-                logArea.appendText(String.format("[System] Stopped monitoring %s: %s\n", 
+            // Show confirmation dialog
+            Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmDialog.setTitle("Remove Channel");
+            confirmDialog.setHeaderText("Confirm Channel Removal");
+            confirmDialog.setContentText(String.format(
+                "Are you sure you want to remove the channel:\n\n" +
+                "Platform: %s\n" +
+                "Channel: %s\n\n" +
+                "This action cannot be undone.",
+                selected.getPlatform(), 
+                selected.getChannelName()
+            ));
+            
+            // Customize button text
+            ButtonType removeButton = new ButtonType("Remove", ButtonBar.ButtonData.OK_DONE);
+            ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            confirmDialog.getButtonTypes().setAll(removeButton, cancelButton);
+            
+            // Show dialog and wait for user response
+            Optional<ButtonType> result = confirmDialog.showAndWait();
+            
+            if (result.isPresent() && result.get() == removeButton) {
+                // User confirmed removal
+                // Stop monitoring if it's currently being monitored
+                if (monitoringService.isMonitoring(selected)) {
+                    monitoringService.stopMonitoring(selected);
+                    logArea.appendText(String.format("[System] Stopped monitoring %s: %s\n", 
+                        selected.getPlatform(), selected.getChannelName()));
+                }
+                
+                channelList.remove(selected);
+                saveChannelsToConfig();
+                
+                logArea.appendText(String.format("[System] Removed channel %s: %s\n", 
                     selected.getPlatform(), selected.getChannelName()));
             }
+            // If user clicked Cancel or closed dialog, do nothing
             
-            channelList.remove(selected);
-            saveChannelsToConfig();
         } else {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("No Selection");
