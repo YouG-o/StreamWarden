@@ -42,7 +42,7 @@ public class StreamMonitor implements Runnable {
     @Override
     public void run() {
         running.set(true);
-        updateStatus("Monitoring");
+        updateStatus("Offline"); // Start with Offline status when monitoring begins
         logMessage(String.format("[%s] Started monitoring channel: %s", 
             channelEntry.getPlatform(), channelEntry.getChannelName()));
         
@@ -62,6 +62,8 @@ public class StreamMonitor implements Runnable {
                         logMessage(String.format("[%s] Stream ended for: %s", 
                             channelEntry.getPlatform(), channelEntry.getChannelName()));
                     } else {
+                        // Ensure status shows Offline when not recording
+                        updateStatus("Offline");
                         // Only log every few checks to avoid spam
                         logMessage(String.format("[%s] Channel %s is offline, waiting %d seconds...", 
                             channelEntry.getPlatform(), channelEntry.getChannelName(), checkInterval));
@@ -86,7 +88,7 @@ public class StreamMonitor implements Runnable {
         }
         
         running.set(false);
-        updateStatus("Stopped");
+        updateStatus(""); // Clear status when not monitoring
         logMessage(String.format("[%s] Stopped monitoring: %s", 
             channelEntry.getPlatform(), channelEntry.getChannelName()));
     }
@@ -248,7 +250,7 @@ public class StreamMonitor implements Runnable {
     public void stop() {
         running.set(false);
         recording.set(false);
-        updateStatus("Stopped");
+        updateStatus(""); // Clear status when stopped
     }
     
     public boolean isRunning() {

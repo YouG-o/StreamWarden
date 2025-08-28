@@ -138,6 +138,45 @@ public class Main extends Application {
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusCol.setPrefWidth(100);
         
+        // Custom cell factory for status column with colors
+        statusCol.setCellFactory(column -> {
+            return new TableCell<ChannelEntry, String>() {
+                @Override
+                protected void updateItem(String status, boolean empty) {
+                    super.updateItem(status, empty);
+                    
+                    if (empty || getIndex() >= getTableView().getItems().size()) {
+                        setText(null);
+                        setStyle("");
+                        return;
+                    }
+                    
+                    ChannelEntry channel = getTableView().getItems().get(getIndex());
+                    
+                    // Only show status if channel is active (being monitored)
+                    if (!channel.getIsActive() || status == null || status.isEmpty()) {
+                        setText("");
+                        setStyle("");
+                    } else {
+                        setText(status);
+                        
+                        // Apply colors based on status
+                        switch (status) {
+                            case "Recording":
+                                setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
+                                break;
+                            case "Offline":
+                                setStyle("-fx-text-fill: #e74c3c;");
+                                break;
+                            default:
+                                setStyle("");
+                                break;
+                        }
+                    }
+                }
+            };
+        });
+        
         TableColumn<ChannelEntry, String> qualityCol = new TableColumn<>("Quality");
         qualityCol.setCellValueFactory(new PropertyValueFactory<>("quality"));
         qualityCol.setPrefWidth(80);
