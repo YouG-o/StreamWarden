@@ -124,13 +124,8 @@ public class StreamMonitor implements Runnable {
             try {
                 String outputFile = generateOutputFilename();
                 
-                // Ensure output directory exists
-                File outputDir = new File(settings.getOutputDirectory());
-                if (!outputDir.exists()) {
-                    outputDir.mkdirs();
-                    logMessage(String.format("[%s] Created output directory: %s", 
-                        channelEntry.getPlatform(), outputDir.getAbsolutePath()));
-                }
+                // Create channel-specific directory structure
+                File outputDir = createChannelDirectory();
                 
                 ProcessBuilder pb = new ProcessBuilder();
                 pb.command(
@@ -139,10 +134,10 @@ public class StreamMonitor implements Runnable {
                     channelEntry.getQuality(),
                     "-o", outputFile
                 );
-                pb.directory(outputDir); // Use the File object instead of new File()
+                pb.directory(outputDir);
                 
-                logMessage(String.format("[%s] Recording to: %s", 
-                    channelEntry.getPlatform(), outputFile));
+                logMessage(String.format("[%s] Recording to: %s%s%s", 
+                    channelEntry.getPlatform(), outputDir.getAbsolutePath(), File.separator, outputFile));
                 
                 Process process = pb.start();
                 
@@ -177,6 +172,35 @@ public class StreamMonitor implements Runnable {
         
         recordingThread.setDaemon(true);
         recordingThread.start();
+    }
+    
+    /**
+     * Create and return the channel-specific directory for recordings
+     */
+    private File createChannelDirectory() {
+        // Base output directory
+        File baseDir = new File(settings.getOutputDirectory());
+        
+        // Sanitize channel name for directory creation
+        String channelDirName = sanitizeFilename(channelEntry.getChannelName());
+        
+        // Create channel directory: outputDir/ChannelName/
+        File channelDir = new File(baseDir, channelDirName);
+        
+        // Ensure the directory exists
+        if (!channelDir.exists()) {
+            if (channelDir.mkdirs()) {
+                logMessage(String.format("[%s] Created channel directory: %s", 
+                    channelEntry.getPlatform(), channelDir.getAbsolutePath()));
+            } else {
+                logMessage(String.format("[%s] Failed to create channel directory: %s", 
+                    channelEntry.getPlatform(), channelDir.getAbsolutePath()));
+                // Fallback to base directory if channel directory creation fails
+                return baseDir;
+            }
+        }
+        
+        return channelDir;
     }
     
     private String generateOutputFilename() {

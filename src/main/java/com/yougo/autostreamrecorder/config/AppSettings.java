@@ -28,13 +28,8 @@ public class AppSettings {
     private int defaultCheckInterval = 60;
     private String defaultQuality = "best";
     private boolean minimizeToTray = false;
-    private boolean showNotifications = true;
 
-    // Tool paths - use system PATH for now (development phase)
-    private String streamlinkPath = "streamlink";
-    private String ytDlpPath = "yt-dlp";
-    
-    
+
     /**
      * Load settings from JSON file
      */
@@ -108,27 +103,43 @@ public class AppSettings {
         this.minimizeToTray = minimizeToTray;
     }
     
-    public boolean isShowNotifications() {
-        return showNotifications;
-    }
-    
-    public void setShowNotifications(boolean showNotifications) {
-        this.showNotifications = showNotifications;
-    }
-    
+    /**
+     * Get the path to streamlink executable based on OS and availability
+     */
     public String getStreamlinkPath() {
-        return streamlinkPath;
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("win")) {
+            // Windows: try bundled first, fallback to system
+            String bundledPath = "bin" + File.separator + "windows" + File.separator + 
+                                "streamlink-7.5.0-1-py313-x86_64" + File.separator + 
+                                "bin" + File.separator + "streamlink.exe";
+            File bundledFile = new File(bundledPath);
+            if (bundledFile.exists()) {
+                return bundledPath;
+            }
+            return "streamlink"; // Fallback to system PATH
+        } else {
+            // Linux: use system installation
+            return "streamlink";
+        }
     }
     
-    public void setStreamlinkPath(String streamlinkPath) {
-        this.streamlinkPath = streamlinkPath;
-    }
-    
+    /**
+     * Get the path to yt-dlp executable based on OS and availability
+     */
     public String getYtDlpPath() {
-        return ytDlpPath;
-    }
-    
-    public void setYtDlpPath(String ytDlpPath) {
-        this.ytDlpPath = ytDlpPath;
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("win")) {
+            // Windows: try bundled first, fallback to system
+            String bundledPath = "bin" + File.separator + "windows" + File.separator + "yt-dlp.exe";
+            File bundledFile = new File(bundledPath);
+            if (bundledFile.exists()) {
+                return bundledPath;
+            }
+            return "yt-dlp"; // Fallback to system PATH
+        } else {
+            // Linux: use system installation
+            return "yt-dlp";
+        }
     }
 }
