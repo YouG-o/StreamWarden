@@ -139,23 +139,4 @@ public class AppSettings {
             return "streamlink";
         }
     }
-    
-    /**
-     * Get the path to yt-dlp executable based on OS and availability
-     */
-    public String getYtDlpPath() {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("win")) {
-            // Windows: try bundled first, fallback to system
-            String bundledPath = "bin" + File.separator + "windows" + File.separator + "yt-dlp.exe";
-            File bundledFile = new File(bundledPath);
-            if (bundledFile.exists()) {
-                return bundledPath;
-            }
-            return "yt-dlp"; // Fallback to system PATH
-        } else {
-            // Linux: use system installation
-            return "yt-dlp";
-        }
-    }
 }
