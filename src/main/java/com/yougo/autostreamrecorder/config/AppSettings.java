@@ -23,11 +23,27 @@ public class AppSettings {
     }
     
     // Default settings
-    private String outputDirectory = System.getProperty("user.home") + File.separator + "AutoStreamRecorder";
+    private String outputDirectory = getDefaultDownloadsDirectory();
     private boolean autoStartMonitoring = true;
     private int defaultCheckInterval = 60;
     private String defaultQuality = "best";
     private boolean minimizeToTray = false;
+
+    /**
+     * Get the default Downloads directory based on the operating system
+     */
+    private static String getDefaultDownloadsDirectory() {
+        String os = System.getProperty("os.name").toLowerCase();
+        String userHome = System.getProperty("user.home");
+        
+        if (os.contains("win")) {
+            // Windows: %USERPROFILE%\Downloads
+            return userHome + File.separator + "Downloads" + File.separator + "AutoStreamRecorder";
+        } else {
+            // Linux/Mac: ~/Downloads
+            return userHome + File.separator + "Downloads" + File.separator + "AutoStreamRecorder";
+        }
+    }
 
 
     /**
