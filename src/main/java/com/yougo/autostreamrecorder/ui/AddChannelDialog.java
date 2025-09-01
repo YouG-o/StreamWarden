@@ -19,28 +19,37 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
     private ComboBox<String> qualityCombo;
     private Spinner<Integer> checkIntervalSpinner;
     private CheckBox enabledCheckBox;
+    private boolean isEditMode = false;
     
     public AddChannelDialog() {
-        setTitle("Add Channel");
-        setHeaderText("Add a new channel to monitor");
+        this(false);
+    }
+    
+    public AddChannelDialog(boolean editMode) {
+        this.isEditMode = editMode;
+        setTitle(editMode ? "Edit Channel" : "Add Channel");
+        setHeaderText(editMode ? "Edit channel settings" : "Add a new channel to monitor");
         
         // Create dialog buttons
-        ButtonType addButtonType = new ButtonType("Add", ButtonBar.ButtonData.OK_DONE);
-        getDialogPane().getButtonTypes().addAll(addButtonType, ButtonType.CANCEL);
+        ButtonType actionButtonType = new ButtonType(
+            editMode ? "Save" : "Add", 
+            ButtonBar.ButtonData.OK_DONE
+        );
+        getDialogPane().getButtonTypes().addAll(actionButtonType, ButtonType.CANCEL);
         
         // Create form content
         GridPane grid = createFormContent();
         getDialogPane().setContent(grid);
         
-        // Enable/disable Add button based on form validity
-        Button addButton = (Button) getDialogPane().lookupButton(addButtonType);
-        addButton.disableProperty().bind(
+        // Enable/disable action button based on form validity
+        Button actionButton = (Button) getDialogPane().lookupButton(actionButtonType);
+        actionButton.disableProperty().bind(
             Bindings.isEmpty(channelNameField.textProperty())
         );
         
         // Set result converter
         setResultConverter(dialogButton -> {
-            if (dialogButton == addButtonType) {
+            if (dialogButton == actionButtonType) {
                 return createChannelEntry();
             }
             return null;
@@ -126,18 +135,17 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
     }
     
     public static Optional<ChannelEntry> showDialog() {
-        AddChannelDialog dialog = new AddChannelDialog();
+        AddChannelDialog dialog = new AddChannelDialog(false);
         return dialog.showAndWait();
     }
     
     public static Optional<ChannelEntry> showDialog(ChannelEntry existing) {
-        AddChannelDialog dialog = new AddChannelDialog();
+        AddChannelDialog dialog = new AddChannelDialog(true);
         // Pre-fill fields with existing channel info
         dialog.platformCombo.setValue(existing.getPlatform());
         dialog.channelNameField.setText(existing.getChannelName());
         dialog.qualityCombo.setValue(existing.getQuality());
         dialog.enabledCheckBox.setSelected(existing.getIsActive());
-        // You can add checkInterval if needed
         return dialog.showAndWait();
     }
 }
