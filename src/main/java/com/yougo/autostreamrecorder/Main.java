@@ -90,20 +90,29 @@ public class Main extends Application {
         HBox toolbar = new HBox(10);
         toolbar.setPadding(new Insets(10));
         toolbar.setStyle("-fx-background-color: #f0f0f0;");
-        
+
         Button addChannelBtn = new Button("Add Channel");
+        Button editChannelBtn = new Button("Edit Selected");
         Button settingsBtn = new Button("Settings");
         Button removeChannelBtn = new Button("Remove Selected");
         Button clearLogsBtn = new Button("Clear Logs");
-        
+
         // Add button actions
         addChannelBtn.setOnAction(e -> showAddChannelDialog());
+        editChannelBtn.setOnAction(e -> editSelectedChannel());
         settingsBtn.setOnAction(e -> showSettingsDialog());
         removeChannelBtn.setOnAction(e -> removeSelectedChannel());
         clearLogsBtn.setOnAction(e -> logArea.clear());
-        
-        toolbar.getChildren().addAll(addChannelBtn, removeChannelBtn, new Separator(), 
-                                    clearLogsBtn, new Separator(), settingsBtn);
+
+        toolbar.getChildren().addAll(
+            addChannelBtn, 
+            editChannelBtn, 
+            removeChannelBtn, 
+            new Separator(), 
+            clearLogsBtn, 
+            new Separator(), 
+            settingsBtn
+        );
         return toolbar;
     }
     
@@ -199,6 +208,17 @@ public class Main extends Application {
         // Initialize data
         channelList = FXCollections.observableArrayList();
         table.setItems(channelList);
+        
+        table.setRowFactory(tv -> {
+            TableRow<ChannelEntry> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    ChannelEntry selected = row.getItem();
+                    showEditChannelDialog(selected);
+                }
+            });
+            return row;
+        });
         
         return table;
     }
@@ -392,6 +412,36 @@ public class Main extends Application {
         Thread shutdownThread = new Thread(shutdownTask);
         shutdownThread.setDaemon(true);
         shutdownThread.start();
+    }
+
+    private void showEditChannelDialog(ChannelEntry channelEntry) {
+        Optional<ChannelEntry> result = AddChannelDialog.showDialog(channelEntry);
+        result.ifPresent(edited -> {
+            // Update channel fields
+            channelEntry.setPlatform(edited.getPlatform());
+            channelEntry.setChannelName(edited.getChannelName());
+            channelEntry.setChannelUrl(edited.getChannelUrl());
+            channelEntry.setQuality(edited.getQuality());
+            channelEntry.setIsActive(edited.getIsActive());
+            // Refresh table and save
+            channelTable.refresh();
+            saveChannelsToConfig();
+            logArea.appendText(String.format("[System] Edited channel %s: %s\n",
+                edited.getPlatform(), edited.getChannelName()));
+        });
+    }
+
+    private void editSelectedChannel() {
+        ChannelEntry selected = channelTable.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            showEditChannelDialog(selected);
+        } else {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("No Selection");
+            alert.setHeaderText("No channel selected");
+            alert.setContentText("Please select a channel to edit.");
+            alert.showAndWait();
+        }
     }
 
     public static void main(String[] args) {
