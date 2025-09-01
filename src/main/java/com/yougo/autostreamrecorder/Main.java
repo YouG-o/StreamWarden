@@ -200,6 +200,17 @@ public class Main extends Application {
         channelList = FXCollections.observableArrayList();
         table.setItems(channelList);
         
+        table.setRowFactory(tv -> {
+            TableRow<ChannelEntry> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    ChannelEntry selected = row.getItem();
+                    showEditChannelDialog(selected);
+                }
+            });
+            return row;
+        });
+        
         return table;
     }
     
@@ -392,6 +403,23 @@ public class Main extends Application {
         Thread shutdownThread = new Thread(shutdownTask);
         shutdownThread.setDaemon(true);
         shutdownThread.start();
+    }
+
+    private void showEditChannelDialog(ChannelEntry channelEntry) {
+        Optional<ChannelEntry> result = AddChannelDialog.showDialog(channelEntry);
+        result.ifPresent(edited -> {
+            // Update channel fields
+            channelEntry.setPlatform(edited.getPlatform());
+            channelEntry.setChannelName(edited.getChannelName());
+            channelEntry.setChannelUrl(edited.getChannelUrl());
+            channelEntry.setQuality(edited.getQuality());
+            channelEntry.setIsActive(edited.getIsActive());
+            // Refresh table and save
+            channelTable.refresh();
+            saveChannelsToConfig();
+            logArea.appendText(String.format("[System] Edited channel %s: %s\n",
+                edited.getPlatform(), edited.getChannelName()));
+        });
     }
 
     public static void main(String[] args) {

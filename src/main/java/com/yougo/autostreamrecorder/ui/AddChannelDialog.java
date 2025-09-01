@@ -129,4 +129,15 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
         AddChannelDialog dialog = new AddChannelDialog();
         return dialog.showAndWait();
     }
+    
+    public static Optional<ChannelEntry> showDialog(ChannelEntry existing) {
+        AddChannelDialog dialog = new AddChannelDialog();
+        // Pre-fill fields with existing channel info
+        dialog.platformCombo.setValue(existing.getPlatform());
+        dialog.channelNameField.setText(existing.getChannelName());
+        dialog.qualityCombo.setValue(existing.getQuality());
+        dialog.enabledCheckBox.setSelected(existing.getIsActive());
+        // You can add checkInterval if needed
+        return dialog.showAndWait();
+    }
 }
