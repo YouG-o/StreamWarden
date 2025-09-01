@@ -28,6 +28,7 @@ public class AppSettings {
     private int defaultCheckInterval = 60;
     private String defaultQuality = "best";
     private boolean minimizeToTray = false;
+    private boolean showActivityLogs = false;
 
     /**
      * Get the default Downloads directory based on the operating system
@@ -117,6 +118,15 @@ public class AppSettings {
     
     public void setMinimizeToTray(boolean minimizeToTray) {
         this.minimizeToTray = minimizeToTray;
+    }
+    
+    public boolean isShowActivityLogs() {
+        return showActivityLogs;
+    }
+    
+    public void setShowActivityLogs(boolean showActivityLogs) {
+        this.showActivityLogs = showActivityLogs;
+        save();
     }
     
     /**
