@@ -21,6 +21,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -31,6 +32,8 @@ public class Main extends Application {
     private TableView<ChannelEntry> channelTable;
     private ObservableList<ChannelEntry> channelList;
     private TextArea logArea;
+    private Label logLabel;
+    private CheckBox showLogsCheckBox;
     private MonitoringService monitoringService;
     private AppSettings appSettings;
 
@@ -122,17 +125,52 @@ public class Main extends Application {
         
         // Channel table
         channelTable = createChannelTable();
+        VBox.setVgrow(channelTable, Priority.ALWAYS); // Make table grow to fill available space
         
         // Log area
-        Label logLabel = new Label("Activity Logs:");
+        logLabel = new Label("Activity Logs:");
         logArea = new TextArea();
         logArea.setEditable(false);
         logArea.setPrefRowCount(8);
         logArea.setWrapText(true);
         logArea.setStyle("-fx-font-family: monospace;");
         
-        centerContent.getChildren().addAll(channelTable, logLabel, logArea);
+        // Show logs checkbox
+        showLogsCheckBox = new CheckBox("Show Activity Logs");
+        showLogsCheckBox.setSelected(appSettings.isShowActivityLogs());
+        showLogsCheckBox.setOnAction(e -> toggleActivityLogs());
+        
+        centerContent.getChildren().addAll(channelTable, showLogsCheckBox);
+        
+        // Add log components if enabled
+        if (appSettings.isShowActivityLogs()) {
+            centerContent.getChildren().addAll(logLabel, logArea);
+            VBox.setVgrow(channelTable, Priority.SOMETIMES);
+        }
+        
         return centerContent;
+    }
+    
+    /**
+     * Toggle visibility of activity logs
+     */
+    private void toggleActivityLogs() {
+        boolean showLogs = showLogsCheckBox.isSelected();
+        appSettings.setShowActivityLogs(showLogs);
+        
+        VBox centerContent = (VBox) ((BorderPane) channelTable.getParent().getParent()).getCenter();
+        
+        if (showLogs) {
+            // Add log components if not already present
+            if (!centerContent.getChildren().contains(logLabel)) {
+                centerContent.getChildren().addAll(logLabel, logArea);
+                VBox.setVgrow(channelTable, Priority.SOMETIMES);
+            }
+        } else {
+            // Remove log components
+            centerContent.getChildren().removeAll(logLabel, logArea);
+            VBox.setVgrow(channelTable, Priority.ALWAYS);
+        }
     }
     
     private TableView<ChannelEntry> createChannelTable() {
