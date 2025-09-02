@@ -3,10 +3,12 @@ package com.yougo.autostreamrecorder.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class AppSettings {
     
@@ -148,5 +150,84 @@ public class AppSettings {
             // Linux: use system installation
             return "streamlink";
         }
+    }
+    
+    /**
+     * Check if Kick platform is supported by current Streamlink version
+     * Kick requires Streamlink 7.3.0 or higher
+     */
+    public boolean isKickSupported() {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(getStreamlinkPath(), "--version");
+            Process process = pb.start();
+            
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String versionLine = reader.readLine();
+                if (versionLine != null && versionLine.contains("streamlink")) {
+                    // Extract version number (e.g., "streamlink 7.5.1" -> "7.5.1")
+                    String[] parts = versionLine.split(" ");
+                    if (parts.length >= 2) {
+                        String version = parts[1];
+                        return isVersionSupported(version, "7.3.0");
+                    }
+                }
+            }
+            process.waitFor();
+        } catch (Exception e) {
+            // If we can't determine version, assume Kick is not supported
+            return false;
+        }
+        return false;
+    }
+    
+    /**
+     * Compare version strings to check if current version meets minimum requirement
+     */
+    private boolean isVersionSupported(String currentVersion, String minVersion) {
+        try {
+            String[] current = currentVersion.split("\\.");
+            String[] minimum = minVersion.split("\\.");
+            
+            int maxLength = Math.max(current.length, minimum.length);
+            
+            for (int i = 0; i < maxLength; i++) {
+                int currentPart = i < current.length ? Integer.parseInt(current[i]) : 0;
+                int minimumPart = i < minimum.length ? Integer.parseInt(minimum[i]) : 0;
+                
+                if (currentPart > minimumPart) {
+                    return true;
+                } else if (currentPart < minimumPart) {
+                    return false;
+                }
+            }
+            
+            return true; // Versions are equal
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Get current Streamlink version string
+     */
+    public String getStreamlinkVersion() {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(getStreamlinkPath(), "--version");
+            Process process = pb.start();
+            
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String versionLine = reader.readLine();
+                if (versionLine != null && versionLine.contains("streamlink")) {
+                    String[] parts = versionLine.split(" ");
+                    if (parts.length >= 2) {
+                        return parts[1];
+                    }
+                }
+            }
+            process.waitFor();
+        } catch (Exception e) {
+            return "unknown";
+        }
+        return "unknown";
     }
 }

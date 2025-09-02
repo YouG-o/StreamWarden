@@ -44,6 +44,9 @@ public class Main extends Application {
         // Load settings
         appSettings = AppSettings.load();
         
+        // Check Streamlink version and show alert if Kick is not supported
+        checkStreamlinkVersion();
+        
         // Initialize monitoring service
         monitoringService = new MonitoringService(appSettings);
         monitoringService.setStatusCallback(new StreamMonitor.StatusCallback() {
@@ -479,6 +482,30 @@ public class Main extends Application {
             alert.setHeaderText("No channel selected");
             alert.setContentText("Please select a channel to edit.");
             alert.showAndWait();
+        }
+    }
+
+    /**
+     * Check Streamlink version and alert user if Kick platform is not supported
+     */
+    private void checkStreamlinkVersion() {
+        if (!appSettings.isKickSupported()) {
+            String currentVersion = appSettings.getStreamlinkVersion();
+            
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Streamlink Version Notice");
+            alert.setHeaderText("Kick Platform Not Supported");
+            alert.setContentText(String.format(
+                "Your current Streamlink version (%s) does not support Kick platform.\n\n" +
+                "Kick streaming requires Streamlink 7.3.0 or higher.\n" +
+                "You can still use YouTube and Twitch platforms normally.\n\n" +
+                "To add Kick support, please update Streamlink:\n" +
+                "https://github.com/streamlink/streamlink",
+                currentVersion
+            ));
+            
+            // Show alert without blocking the application startup
+            Platform.runLater(() -> alert.showAndWait());
         }
     }
 

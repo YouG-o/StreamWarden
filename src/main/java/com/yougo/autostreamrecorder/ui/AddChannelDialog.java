@@ -1,6 +1,7 @@
 package com.yougo.autostreamrecorder.ui;
 
 import com.yougo.autostreamrecorder.ChannelEntry;
+import com.yougo.autostreamrecorder.config.AppSettings;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -9,6 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.stage.Modality;
 
 import java.util.Optional;
 
@@ -65,11 +67,29 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
         grid.setVgap(10);
         grid.setPadding(new Insets(20, 150, 10, 10));
         
-        // Platform selection (YouTube, Twitch, Kick)
+        // Platform selection - conditionally include Kick based on Streamlink version
         grid.add(new Label("Platform:"), 0, 0);
-        platformCombo = new ComboBox<>(FXCollections.observableArrayList("YouTube", "Twitch", "Kick"));
+        
+        // Check if Kick is supported by current Streamlink version
+        AppSettings settings = AppSettings.load();
+        boolean kickSupported = settings.isKickSupported();
+        
+        if (kickSupported) {
+            platformCombo = new ComboBox<>(FXCollections.observableArrayList("YouTube", "Twitch", "Kick"));
+        } else {
+            platformCombo = new ComboBox<>(FXCollections.observableArrayList("YouTube", "Twitch"));
+        }
+        
         platformCombo.setValue("YouTube");
         grid.add(platformCombo, 1, 0);
+        
+        // Add info label if Kick is not supported
+        if (!kickSupported) {
+            Label kickInfoLabel = new Label("(Kick requires Streamlink 7.3.0+)");
+            kickInfoLabel.setStyle("-fx-text-fill: #888; -fx-font-size: 10px;");
+            grid.add(kickInfoLabel, 1, 0);
+            GridPane.setMargin(kickInfoLabel, new Insets(25, 0, 0, 0));
+        }
         
         // Channel name
         grid.add(new Label("Channel Name:"), 0, 1);
