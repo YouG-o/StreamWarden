@@ -20,6 +20,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -288,18 +291,150 @@ public class Main extends Application {
         channelList = FXCollections.observableArrayList();
         table.setItems(channelList);
         
+        // Create context menu for right-click actions
+        ContextMenu contextMenu = createChannelContextMenu();
+        
         table.setRowFactory(tv -> {
             TableRow<ChannelEntry> row = new TableRow<>();
+            
+            // Double-click to edit
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     ChannelEntry selected = row.getItem();
                     showEditChannelDialog(selected);
                 }
             });
+            
+            // Context menu for right-click (only show on non-empty rows)
+            row.setContextMenu(null);
+            row.itemProperty().addListener((obs, oldItem, newItem) -> {
+                if (newItem != null) {
+                    row.setContextMenu(contextMenu);
+                } else {
+                    row.setContextMenu(null);
+                }
+            });
+            
             return row;
         });
         
         return table;
+    }
+    
+    /**
+     * Create context menu for channel table rows
+     */
+    private ContextMenu createChannelContextMenu() {
+        ContextMenu contextMenu = new ContextMenu();
+        
+        // Edit menu item
+        MenuItem editItem = new MenuItem("Edit");
+        editItem.setOnAction(e -> {
+            ChannelEntry selected = channelTable.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                showEditChannelDialog(selected);
+            }
+        });
+        
+        // Remove menu item
+        MenuItem removeItem = new MenuItem("Remove");
+        removeItem.setOnAction(e -> {
+            ChannelEntry selected = channelTable.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                removeSelectedChannel();
+            }
+        });
+        
+        // Open in browser menu item
+        MenuItem openBrowserItem = new MenuItem("Open in Browser");
+        openBrowserItem.setOnAction(e -> {
+            ChannelEntry selected = channelTable.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                openChannelInBrowser(selected);
+            }
+        });
+        
+        // Add separator for visual grouping
+        SeparatorMenuItem separator = new SeparatorMenuItem();
+        
+        contextMenu.getItems().addAll(editItem, removeItem, separator, openBrowserItem);
+        
+        return contextMenu;
+    }
+    
+        /**
+     * Open channel URL in default system browser
+     */
+    private void openChannelInBrowser(ChannelEntry channel) {
+        // Execute browser opening in a separate thread to avoid freezing UI
+        Task<Void> browserTask = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                try {
+                    String url = channel.getChannelUrl();
+                    
+                    // Try system-specific approaches to avoid GTK warnings
+                    String os = System.getProperty("os.name").toLowerCase();
+                    
+                    if (os.contains("linux")) {
+                        // Use xdg-open on Linux to avoid GTK/GDK warnings
+                        ProcessBuilder pb = new ProcessBuilder("xdg-open", url);
+                        pb.start();
+                    } else if (os.contains("windows")) {
+                        // Use Windows specific command
+                        ProcessBuilder pb = new ProcessBuilder("rundll32", "url.dll,FileProtocolHandler", url);
+                        pb.start();
+                    } else if (os.contains("mac")) {
+                        // Use macOS specific command
+                        ProcessBuilder pb = new ProcessBuilder("open", url);
+                        pb.start();
+                    } else {
+                        // Fallback to Desktop API for other systems
+                        if (java.awt.Desktop.isDesktopSupported()) {
+                            java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
+                            if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
+                                java.net.URI uri = new java.net.URI(url);
+                                desktop.browse(uri);
+                            } else {
+                                throw new UnsupportedOperationException("Browser action not supported");
+                            }
+                        } else {
+                            throw new UnsupportedOperationException("Desktop integration not supported");
+                        }
+                    }
+                    
+                    // Log success on JavaFX thread
+                    Platform.runLater(() -> {
+                        logArea.appendText(String.format("[System] Opened %s: %s in browser\n", 
+                            channel.getPlatform(), channel.getChannelName()));
+                    });
+                    
+                } catch (Exception e) {
+                    Platform.runLater(() -> {
+                        showBrowserError("Failed to open browser: " + e.getMessage());
+                        logArea.appendText(String.format("[System] Error opening browser for %s: %s - %s\n", 
+                            channel.getPlatform(), channel.getChannelName(), e.getMessage()));
+                    });
+                }
+                return null;
+            }
+        };
+        
+        // Run the task in a background thread
+        Thread browserThread = new Thread(browserTask);
+        browserThread.setDaemon(true);
+        browserThread.start();
+    }
+    
+    /**
+     * Show error dialog when browser opening fails
+     */
+    private void showBrowserError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Browser Error");
+        alert.setHeaderText("Cannot Open Browser");
+        alert.setContentText(message);
+        alert.showAndWait();
     }
     
     /**

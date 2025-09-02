@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kick platform support in channel list, with version check and warning if unsupported.
 - Persistent settings stored in JSON configuration file.
 - Platform icons display in channel dialog and main table view for better visual identification.
+- Context menu on channel rows with "Edit", "Remove" and "Open in Browser" actions for quick access.
 
 ---
 
