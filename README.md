@@ -6,7 +6,7 @@
 
 # AutoStreamRecorder
 
-Desktop app to automatically monitor Twitch / YouTube channels and record livestreams as soon as they go live.
+Desktop app to automatically monitor Twitch / YouTube / Kick channels and record livestreams as soon as they go live.
 
 </div>
 
@@ -32,7 +32,7 @@ While you can build and run the application in its current state, it contains on
 
 </div>
   
-- **Multi-Platform Support**: Monitor both Twitch and YouTube channels simultaneously
+- **Multi-Platform Support**: Monitor Twitch, YouTube and Kick channels simultaneously
 - **Automatic Detection**: Start recording immediately when streams go live
 - **Custom Quality Settings**: Choose recording quality per channel (best, 1080p, 720p, etc.)
 - **Organized Storage**: Recordings are automatically sorted by channel in separate folders
@@ -61,7 +61,7 @@ The application uses Streamlink under the hood for reliable stream capture and s
   ### Prerequisites
   - Java 17 or higher
   - Maven 3.6+
-  - **Streamlink** installed on your system
+  - **Streamlink** installed on your system (7.3.0 or higher for Kick support)
 
   ### Installation
   ```bash

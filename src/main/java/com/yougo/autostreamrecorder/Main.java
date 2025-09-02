@@ -5,6 +5,7 @@ import com.yougo.autostreamrecorder.config.ChannelConfig;
 import com.yougo.autostreamrecorder.core.MonitoringService;
 import com.yougo.autostreamrecorder.core.StreamMonitor;
 import com.yougo.autostreamrecorder.ui.AddChannelDialog;
+import java.io.InputStream;
 import java.util.Optional;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -19,6 +20,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -43,6 +46,9 @@ public class Main extends Application {
         
         // Load settings
         appSettings = AppSettings.load();
+        
+        // Check Streamlink version and show alert if Kick is not supported
+        checkStreamlinkVersion();
         
         // Initialize monitoring service
         monitoringService = new MonitoringService(appSettings);
@@ -180,6 +186,41 @@ public class Main extends Application {
         TableColumn<ChannelEntry, String> platformCol = new TableColumn<>("Platform");
         platformCol.setCellValueFactory(new PropertyValueFactory<>("platform"));
         platformCol.setPrefWidth(80);
+        
+        // Custom cell factory for platform column to display icons
+        platformCol.setCellFactory(column -> {
+            return new TableCell<ChannelEntry, String>() {
+                @Override
+                protected void updateItem(String platform, boolean empty) {
+                    super.updateItem(platform, empty);
+                    
+                    if (empty || platform == null) {
+                        setText(null);
+                        setGraphic(null);
+                        return;
+                    }
+                    
+                    // Load platform icon
+                    ImageView icon = loadPlatformIcon(platform);
+                    if (icon != null) {
+                        setText(""); // Remove text, show only icon
+                        setGraphic(icon);
+                        
+                        // Center the icon in the cell
+                        setAlignment(Pos.CENTER);
+                        
+                        // Add tooltip with platform name for accessibility
+                        Tooltip tooltip = new Tooltip(platform);
+                        setTooltip(tooltip);
+                    } else {
+                        // Fallback to text if icon can't be loaded
+                        setText(platform);
+                        setGraphic(null);
+                        setTooltip(null);
+                    }
+                }
+            };
+        });
         
         TableColumn<ChannelEntry, String> nameCol = new TableColumn<>("Channel Name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("channelName"));
@@ -480,6 +521,61 @@ public class Main extends Application {
             alert.setContentText("Please select a channel to edit.");
             alert.showAndWait();
         }
+    }
+
+    /**
+     * Check Streamlink version and alert user if Kick platform is not supported
+     */
+    private void checkStreamlinkVersion() {
+        if (!appSettings.isKickSupported()) {
+            String currentVersion = appSettings.getStreamlinkVersion();
+            
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Streamlink Version Notice");
+            alert.setHeaderText("Kick Platform Not Supported");
+            alert.setContentText(String.format(
+                "Your current Streamlink version (%s) does not support Kick platform.\n\n" +
+                "Kick streaming requires Streamlink 7.3.0 or higher.\n" +
+                "You can still use YouTube and Twitch platforms normally.\n\n" +
+                "To add Kick support, please update Streamlink:\n" +
+                "https://github.com/streamlink/streamlink",
+                currentVersion
+            ));
+            
+            // Show alert without blocking the application startup
+            Platform.runLater(() -> alert.showAndWait());
+        }
+    }
+
+    /**
+     * Load platform icon from assets/icons directory
+     */
+    private ImageView loadPlatformIcon(String platform) {
+        try {
+            String iconPath = "/assets/icons/" + platform.toLowerCase() + ".png";
+            InputStream iconStream = getClass().getResourceAsStream(iconPath);
+            
+            if (iconStream != null) {
+                Image image = new Image(iconStream);
+                
+                // Check if image loaded successfully
+                if (!image.isError()) {
+                    ImageView imageView = new ImageView(image);
+                    
+                    // Set icon size slightly larger for table display (20px)
+                    imageView.setFitWidth(20);
+                    imageView.setFitHeight(20);
+                    imageView.setPreserveRatio(true);
+                    
+                    return imageView;
+                }
+            }
+        } catch (Exception e) {
+            // If icon loading fails, continue without icon
+            System.err.println("Failed to load icon for platform: " + platform + " - " + e.getMessage());
+        }
+        
+        return null;
     }
 
     public static void main(String[] args) {
