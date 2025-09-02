@@ -65,9 +65,9 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
         grid.setVgap(10);
         grid.setPadding(new Insets(20, 150, 10, 10));
         
-        // Platform selection
+        // Platform selection (YouTube, Twitch, Kick)
         grid.add(new Label("Platform:"), 0, 0);
-        platformCombo = new ComboBox<>(FXCollections.observableArrayList("YouTube", "Twitch"));
+        platformCombo = new ComboBox<>(FXCollections.observableArrayList("YouTube", "Twitch", "Kick"));
         platformCombo.setValue("YouTube");
         grid.add(platformCombo, 1, 0);
         
@@ -129,6 +129,8 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
                 }
             case "twitch":
                 return "https://www.twitch.tv/" + channelName;
+            case "kick":
+                return "https://kick.com/" + channelName;
             default:
                 return "";
         }
