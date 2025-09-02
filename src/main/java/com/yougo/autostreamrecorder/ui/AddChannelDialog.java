@@ -7,11 +7,14 @@ import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Modality;
 
+import java.io.InputStream;
 import java.util.Optional;
 
 public class AddChannelDialog extends Dialog<ChannelEntry> {
@@ -79,6 +82,10 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
         } else {
             platformCombo = new ComboBox<>(FXCollections.observableArrayList("YouTube", "Twitch"));
         }
+        
+        // Set custom cell factory to display icons with platform names
+        platformCombo.setCellFactory(listView -> new PlatformListCell());
+        platformCombo.setButtonCell(new PlatformListCell());
         
         platformCombo.setValue("YouTube");
         grid.add(platformCombo, 1, 0);
@@ -169,5 +176,61 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
         dialog.qualityCombo.setValue(existing.getQuality());
         dialog.enabledCheckBox.setSelected(existing.getIsActive());
         return dialog.showAndWait();
+    }
+    
+    /**
+     * Custom ListCell to display platform icons alongside text
+     */
+    private static class PlatformListCell extends ListCell<String> {
+        @Override
+        protected void updateItem(String platform, boolean empty) {
+            super.updateItem(platform, empty);
+            
+            if (empty || platform == null) {
+                setText(null);
+                setGraphic(null);
+            } else {
+                setText(platform);
+                
+                // Load platform icon
+                ImageView icon = loadPlatformIcon(platform);
+                if (icon != null) {
+                    setGraphic(icon);
+                } else {
+                    setGraphic(null);
+                }
+            }
+        }
+        
+        /**
+         * Load platform icon from assets/icons directory
+         */
+        private ImageView loadPlatformIcon(String platform) {
+            try {
+                String iconPath = "/assets/icons/" + platform.toLowerCase() + ".png";
+                InputStream iconStream = getClass().getResourceAsStream(iconPath);
+                
+                if (iconStream != null) {
+                    Image image = new Image(iconStream);
+                    
+                    // Check if image loaded successfully
+                    if (!image.isError()) {
+                        ImageView imageView = new ImageView(image);
+                        
+                        // Set icon size to match text height (approximately 16px)
+                        imageView.setFitWidth(16);
+                        imageView.setFitHeight(16);
+                        imageView.setPreserveRatio(true);
+                        
+                        return imageView;
+                    }
+                }
+            } catch (Exception e) {
+                // If icon loading fails, continue without icon
+                System.err.println("Failed to load icon for platform: " + platform + " - " + e.getMessage());
+            }
+            
+            return null;
+        }
     }
 }
