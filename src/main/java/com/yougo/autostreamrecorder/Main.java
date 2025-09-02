@@ -29,6 +29,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.Region;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -107,23 +109,27 @@ public class Main extends Application {
         Button editChannelBtn = new Button("Edit Selected");
         Button settingsBtn = new Button("Settings");
         Button removeChannelBtn = new Button("Remove Selected");
-        Button clearLogsBtn = new Button("Clear Logs");
+        Button supportBtn = new Button("Support me 💌");
 
         // Add button actions
         addChannelBtn.setOnAction(e -> showAddChannelDialog());
         editChannelBtn.setOnAction(e -> editSelectedChannel());
         settingsBtn.setOnAction(e -> showSettingsDialog());
         removeChannelBtn.setOnAction(e -> removeSelectedChannel());
-        clearLogsBtn.setOnAction(e -> logArea.clear());
+        supportBtn.setOnAction(e -> showSupportDialog());
+
+        // Create spacer to push support button to the right
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
         toolbar.getChildren().addAll(
             addChannelBtn, 
             editChannelBtn, 
             removeChannelBtn, 
             new Separator(), 
-            clearLogsBtn, 
-            new Separator(), 
-            settingsBtn
+            settingsBtn,
+            spacer,
+            supportBtn
         );
         return toolbar;
     }
@@ -144,12 +150,10 @@ public class Main extends Application {
         logArea.setWrapText(true);
         logArea.setStyle("-fx-font-family: monospace;");
         
-        // Show logs checkbox
-        showLogsCheckBox = new CheckBox("Show Activity Logs");
-        showLogsCheckBox.setSelected(appSettings.isShowActivityLogs());
-        showLogsCheckBox.setOnAction(e -> toggleActivityLogs());
+        // Create log controls container
+        HBox logControls = createLogControls();
         
-        centerContent.getChildren().addAll(channelTable, showLogsCheckBox);
+        centerContent.getChildren().addAll(channelTable, logControls);
         
         // Add log components if enabled
         if (appSettings.isShowActivityLogs()) {
@@ -161,6 +165,36 @@ public class Main extends Application {
     }
     
     /**
+     * Create log controls container with checkbox and clear button
+     */
+    private HBox createLogControls() {
+        HBox logControls = new HBox(10);
+        logControls.setAlignment(Pos.CENTER_LEFT);
+        
+        // Show logs checkbox
+        showLogsCheckBox = new CheckBox("Show Activity Logs");
+        showLogsCheckBox.setSelected(appSettings.isShowActivityLogs());
+        showLogsCheckBox.setOnAction(e -> toggleActivityLogs());
+        
+        // Create spacer to push clear button to the right
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        
+        // Clear logs button
+        Button clearLogsBtn = new Button("Clear Logs");
+        clearLogsBtn.setOnAction(e -> logArea.clear());
+        
+        // Only show clear button if logs are visible
+        if (appSettings.isShowActivityLogs()) {
+            logControls.getChildren().addAll(showLogsCheckBox, spacer, clearLogsBtn);
+        } else {
+            logControls.getChildren().add(showLogsCheckBox);
+        }
+        
+        return logControls;
+    }
+    
+    /**
      * Toggle visibility of activity logs
      */
     private void toggleActivityLogs() {
@@ -169,16 +203,38 @@ public class Main extends Application {
         
         VBox centerContent = (VBox) ((BorderPane) channelTable.getParent().getParent()).getCenter();
         
+        // Find the log controls container
+        HBox logControls = (HBox) centerContent.getChildren().get(1); // Second child after table
+        
         if (showLogs) {
             // Add log components if not already present
             if (!centerContent.getChildren().contains(logLabel)) {
                 centerContent.getChildren().addAll(logLabel, logArea);
                 VBox.setVgrow(channelTable, Priority.SOMETIMES);
             }
+            
+            // Add clear button to log controls if not present
+            if (logControls.getChildren().size() == 1) {
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+                
+                Button clearLogsBtn = new Button("Clear Logs");
+                clearLogsBtn.setOnAction(e -> logArea.clear());
+                
+                logControls.getChildren().addAll(spacer, clearLogsBtn);
+            }
         } else {
             // Remove log components
             centerContent.getChildren().removeAll(logLabel, logArea);
             VBox.setVgrow(channelTable, Priority.ALWAYS);
+            
+            // Remove only clear button and spacer from log controls (keep checkbox)
+            if (logControls.getChildren().size() > 1) {
+                // Create a new list with only the checkbox (first element)
+                CheckBox checkbox = (CheckBox) logControls.getChildren().get(0);
+                logControls.getChildren().clear();
+                logControls.getChildren().add(checkbox);
+            }
         }
     }
     
@@ -711,6 +767,143 @@ public class Main extends Application {
         }
         
         return null;
+    }
+
+    /**
+     * Show support dialog with Ko-fi link
+     */
+    private void showSupportDialog() {
+        Dialog<Void> supportDialog = new Dialog<>();
+        supportDialog.setTitle("Support AutoStreamRecorder");
+        supportDialog.setHeaderText("Support This Project");
+        
+        // Create dialog content
+        VBox content = new VBox(20);
+        content.setPadding(new Insets(20));
+        content.setAlignment(Pos.CENTER);
+        content.setPrefWidth(400);
+        
+        // Support text
+        Label supportText = new Label(
+            "This project is completely free and open source. " +
+            "If my work has been useful to you and you'd like to support it, " +
+            "this is the right place.\n\n" +
+            "Any amount is welcome. Your support helps sustain the work and " +
+            "encourages continued development."
+        );
+        supportText.setWrapText(true);
+        supportText.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
+        supportText.setTextAlignment(TextAlignment.CENTER);
+        
+        // Ko-fi button with image
+        Button kofiButton = createKofiButton();
+        
+        content.getChildren().addAll(supportText, kofiButton);
+        
+        // Set dialog content
+        supportDialog.getDialogPane().setContent(content);
+        
+        // Add close button
+        ButtonType closeButtonType = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+        supportDialog.getDialogPane().getButtonTypes().add(closeButtonType);
+        
+        // Show dialog
+        supportDialog.showAndWait();
+    }
+    
+    /**
+     * Create Ko-fi button with image
+     */
+    private Button createKofiButton() {
+        Button kofiButton = new Button();
+        
+        try {
+            // Load Ko-fi image
+            String imagePath = "/assets/support/ko-fi.png";
+            InputStream imageStream = getClass().getResourceAsStream(imagePath);
+            
+            if (imageStream != null) {
+                Image kofiImage = new Image(imageStream);
+                
+                if (!kofiImage.isError()) {
+                    ImageView imageView = new ImageView(kofiImage);
+                    // Set image size (adjust as needed based on your image)
+                    imageView.setFitHeight(40);
+                    imageView.setPreserveRatio(true);
+                    
+                    kofiButton.setGraphic(imageView);
+                    kofiButton.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
+                } else {
+                    // Fallback to text if image fails
+                    kofiButton.setText("Support me on Ko-fi");
+                    kofiButton.setStyle("-fx-background-color: #FF5E5B; -fx-text-fill: white; -fx-font-weight: bold;");
+                }
+            } else {
+                // Fallback to text if image not found
+                kofiButton.setText("Support me on Ko-fi");
+                kofiButton.setStyle("-fx-background-color: #FF5E5B; -fx-text-fill: white; -fx-font-weight: bold;");
+            }
+        } catch (Exception e) {
+            // Fallback to text if any error occurs
+            kofiButton.setText("Support me on Ko-fi");
+            kofiButton.setStyle("-fx-background-color: #FF5E5B; -fx-text-fill: white; -fx-font-weight: bold;");
+            System.err.println("Failed to load Ko-fi image: " + e.getMessage());
+        }
+        
+        // Set button action to open Ko-fi link
+        kofiButton.setOnAction(e -> openKofiLink());
+        
+        return kofiButton;
+    }
+    
+    /**
+     * Open Ko-fi link in browser
+     */
+    private void openKofiLink() {
+        Task<Void> browserTask = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                try {
+                    String kofiUrl = "https://ko-fi.com/yougo";
+                    String os = System.getProperty("os.name").toLowerCase();
+                    
+                    if (os.contains("linux")) {
+                        ProcessBuilder pb = new ProcessBuilder("xdg-open", kofiUrl);
+                        pb.start();
+                    } else if (os.contains("windows")) {
+                        ProcessBuilder pb = new ProcessBuilder("rundll32", "url.dll,FileProtocolHandler", kofiUrl);
+                        pb.start();
+                    } else if (os.contains("mac")) {
+                        ProcessBuilder pb = new ProcessBuilder("open", kofiUrl);
+                        pb.start();
+                    } else {
+                        // Fallback to Desktop API
+                        if (java.awt.Desktop.isDesktopSupported()) {
+                            java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
+                            if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
+                                java.net.URI uri = new java.net.URI(kofiUrl);
+                                desktop.browse(uri);
+                            }
+                        }
+                    }
+                    
+                    Platform.runLater(() -> {
+                        logArea.appendText("[System] Opened Ko-fi support page in browser\n");
+                    });
+                    
+                } catch (Exception e) {
+                    Platform.runLater(() -> {
+                        showBrowserError("Failed to open Ko-fi link: " + e.getMessage());
+                        logArea.appendText("[System] Error opening Ko-fi link: " + e.getMessage() + "\n");
+                    });
+                }
+                return null;
+            }
+        };
+        
+        Thread browserThread = new Thread(browserTask);
+        browserThread.setDaemon(true);
+        browserThread.start();
     }
 
     public static void main(String[] args) {
