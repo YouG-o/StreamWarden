@@ -229,27 +229,58 @@ public class StreamMonitor implements Runnable {
                 );
                 pb.directory(outputDir);
                 
-                logMessage(String.format("[%s] Recording to: %s%s%s (Quality: %s)", 
-                    channelEntry.getPlatform(), outputDir.getAbsolutePath(), File.separator, outputFile, qualityParam));
+                logMessage(String.format("[%s] Starting recording to: %s%s%s", 
+                    channelEntry.getPlatform(), outputDir.getAbsolutePath(), File.separator, outputFile));
                 
                 Process process = pb.start();
                 currentRecordingProcess = process; // Store reference to current process
                 
-                // Read process output
+                // Variables to track the actual quality used
+                String actualQuality = "unknown";
+                boolean qualityFound = false;
+                
+                // Read process output to extract actual quality used
                 try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(process.getInputStream()))) {
+                        new InputStreamReader(process.getInputStream()));
+                     BufferedReader errorReader = new BufferedReader(
+                        new InputStreamReader(process.getErrorStream()))) {
+                    
                     String line;
+                    
+                    // Read stdout
                     while ((line = reader.readLine()) != null && recording.get()) {
-                        // Optional: log streamlink output for debugging
-                        // logMessage(line);
+                        // Look for quality information in streamlink output
+                        if (!qualityFound) {
+                            String extractedQuality = extractQualityFromOutput(line);
+                            if (extractedQuality != null) {
+                                actualQuality = extractedQuality;
+                                qualityFound = true;
+                                logMessage(String.format("[%s] Recording quality: %s", 
+                                    channelEntry.getPlatform(), actualQuality));
+                            }
+                        }
+                    }
+                    
+                    // Also check stderr for quality information
+                    String errorLine;
+                    while ((errorLine = errorReader.readLine()) != null && recording.get()) {
+                        if (!qualityFound) {
+                            String extractedQuality = extractQualityFromOutput(errorLine);
+                            if (extractedQuality != null) {
+                                actualQuality = extractedQuality;
+                                qualityFound = true;
+                                logMessage(String.format("[%s] Recording quality: %s", 
+                                    channelEntry.getPlatform(), actualQuality));
+                            }
+                        }
                     }
                 }
                 
                 int exitCode = process.waitFor();
                 
                 if (exitCode == 0) {
-                    logMessage(String.format("[%s] Recording completed successfully: %s", 
-                        channelEntry.getPlatform(), outputFile));
+                    logMessage(String.format("[%s] Recording completed successfully: %s (Quality: %s)", 
+                        channelEntry.getPlatform(), outputFile, actualQuality));
                 } else {
                     logMessage(String.format("[%s] Recording ended with exit code %d: %s", 
                         channelEntry.getPlatform(), exitCode, channelEntry.getChannelName()));
@@ -267,6 +298,40 @@ public class StreamMonitor implements Runnable {
         
         recordingThread.setDaemon(true);
         recordingThread.start();
+    }
+    
+    /**
+     * Extract the actual quality used from Streamlink output
+     * Streamlink typically outputs something like "Opening stream: 1080p60 (hls)"
+     */
+    private String extractQualityFromOutput(String line) {
+        if (line == null) {
+            return null;
+        }
+        
+        // Common patterns in Streamlink output for quality information
+        // Pattern 1: "Opening stream: 1080p60 (hls)"
+        Pattern pattern1 = Pattern.compile("Opening stream: ([^\\s\\(]+)");
+        java.util.regex.Matcher matcher1 = pattern1.matcher(line);
+        if (matcher1.find()) {
+            return matcher1.group(1);
+        }
+        
+        // Pattern 2: "Selected quality: 720p"
+        Pattern pattern2 = Pattern.compile("Selected quality: ([^\\s]+)");
+        java.util.regex.Matcher matcher2 = pattern2.matcher(line);
+        if (matcher2.find()) {
+            return matcher2.group(1);
+        }
+        
+        // Pattern 3: "Available streams for ..." followed by quality selection
+        Pattern pattern3 = Pattern.compile("Stream ended, will restart.*quality ([^\\s]+)");
+        java.util.regex.Matcher matcher3 = pattern3.matcher(line);
+        if (matcher3.find()) {
+            return matcher3.group(1);
+        }
+        
+        return null;
     }
     
     /**
