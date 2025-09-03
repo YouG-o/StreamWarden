@@ -109,12 +109,12 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
         qualityCombo = new ComboBox<>(FXCollections.observableArrayList(
             "best", "1080p", "720p", "480p", "360p", "audio_only"
         ));
-        qualityCombo.setValue("best");
+        qualityCombo.setValue(settings.getDefaultQuality()); // Use default from settings
         grid.add(qualityCombo, 1, 2);
         
         // Check interval
         grid.add(new Label("Check Interval (seconds):"), 0, 3);
-        checkIntervalSpinner = new Spinner<>(10, 3600, 60, 10);
+        checkIntervalSpinner = new Spinner<>(10, 3600, settings.getDefaultCheckInterval(), 10); // Use default from settings
         checkIntervalSpinner.setEditable(true);
         grid.add(checkIntervalSpinner, 1, 3);
         

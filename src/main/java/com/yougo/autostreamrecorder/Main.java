@@ -5,6 +5,7 @@ import com.yougo.autostreamrecorder.config.ChannelConfig;
 import com.yougo.autostreamrecorder.core.MonitoringService;
 import com.yougo.autostreamrecorder.core.StreamMonitor;
 import com.yougo.autostreamrecorder.ui.AddChannelDialog;
+import com.yougo.autostreamrecorder.ui.SettingsDialog;
 import java.io.InputStream;
 import java.util.Optional;
 import javafx.animation.KeyFrame;
@@ -536,11 +537,12 @@ public class Main extends Application {
     }
     
     private void showSettingsDialog() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Settings");
-        alert.setHeaderText("Settings Dialog");
-        alert.setContentText("This dialog will be implemented later.");
-        alert.showAndWait();
+        boolean settingsChanged = SettingsDialog.showDialog();
+        if (settingsChanged) {
+            // Reload settings in case they changed
+            appSettings = AppSettings.load();
+            logArea.appendText("[System] Settings updated successfully\n");
+        }
     }
     
     private void removeSelectedChannel() {

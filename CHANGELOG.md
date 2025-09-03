@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Persistent settings stored in JSON configuration file.
 - Platform icons display in channel dialog and main table view for better visual identification.
 - Context menu on channel rows with "Edit", "Remove" and "Open in Browser" actions for quick access.
+- Settings dialog for configuring output directory, monitoring behavior, and application preferences.
 
 ---
 
