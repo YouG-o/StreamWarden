@@ -123,13 +123,6 @@ public class StreamMonitor implements Runnable {
      * This ensures recording starts even if the exact quality isn't available
      */
     private String buildQualityWithFallback(String requestedQuality) {
-        // Handle special cases
-        if ("worst".equals(requestedQuality)) {
-            return "worst";
-        }
-        if ("audio_only".equals(requestedQuality)) {
-            return "audio_only";
-        }
         
         StringBuilder qualityChain = new StringBuilder();
         

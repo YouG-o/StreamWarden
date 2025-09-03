@@ -93,7 +93,7 @@ public class SettingsDialog extends Dialog<Boolean> {
         // Default Quality
         grid.add(new Label("Default Quality:"), 0, row);
         defaultQualityCombo = new ComboBox<>(FXCollections.observableArrayList(
-            "4k", "1080p", "720p", "480p", "360p", "240p", "144p", "audio_only"
+            "4k", "1080p", "720p", "480p", "360p", "240p", "144p"
         ));
         defaultQualityCombo.setPrefWidth(150);
         grid.add(defaultQualityCombo, 1, row);
