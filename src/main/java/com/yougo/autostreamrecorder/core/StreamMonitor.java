@@ -114,6 +114,91 @@ public class StreamMonitor implements Runnable {
         }
     }
     
+    private static final String[] BASE_QUALITY_ORDER = {
+        "4k", "1080p", "720p", "480p", "360p", "240p", "144p"
+    };
+    
+    /**
+     * Build quality parameter with automatic fallback based on quality hierarchy
+     * This ensures recording starts even if the exact quality isn't available
+     */
+    private String buildQualityWithFallback(String requestedQuality) {
+        // Handle special cases
+        if ("worst".equals(requestedQuality)) {
+            return "worst";
+        }
+        if ("audio_only".equals(requestedQuality)) {
+            return "audio_only";
+        }
+        
+        StringBuilder qualityChain = new StringBuilder();
+        
+        // Extract base quality (remove any trailing numbers like "60" from "1080p60")
+        String baseQuality = requestedQuality.replaceAll("\\d+$", "");
+        
+        // Find the position of the requested base quality
+        int startIndex = -1;
+        for (int i = 0; i < BASE_QUALITY_ORDER.length; i++) {
+            if (BASE_QUALITY_ORDER[i].equals(baseQuality)) {
+                startIndex = i;
+                break;
+            }
+        }
+        
+        // If quality not found in our hierarchy, try it first then fallback
+        if (startIndex == -1) {
+            return requestedQuality + ",worst";
+        }
+        
+        // Generate quality chain from requested quality downwards
+        for (int i = startIndex; i < BASE_QUALITY_ORDER.length; i++) {
+            String currentBase = BASE_QUALITY_ORDER[i];
+            
+            // Generate FPS variants for this quality level
+            String[] variants = generateQualityVariants(currentBase);
+            
+            for (String variant : variants) {
+                if (qualityChain.length() > 0) {
+                    qualityChain.append(",");
+                }
+                qualityChain.append(variant);
+            }
+        }
+        
+        // Add "worst" as final fallback
+        qualityChain.append(",worst");
+        
+        return qualityChain.toString();
+    }
+    
+    /**
+     * Generate quality variants for a base quality (e.g., "1080p" -> ["1080p60", "1080p50", "1080p30", "1080p"])
+     * Order depends on user's high FPS preference
+     */
+    private String[] generateQualityVariants(String baseQuality) {
+        boolean recordHighFps = settings.isRecordHighFps();
+        
+        if (recordHighFps) {
+            // High FPS preference: prioritize 60fps, 50fps, then standard fps
+            return new String[] {
+                baseQuality + "60",
+                baseQuality + "50", 
+                baseQuality,
+                baseQuality + "30",
+                baseQuality + "25",
+                baseQuality + "24"
+            };
+        } else {
+            // Standard FPS preference: prioritize 30fps and below, avoid high fps
+            return new String[] {
+                baseQuality,
+                baseQuality + "30",
+                baseQuality + "25",
+                baseQuality + "24"
+            };
+        }
+    }
+    
     private void startRecording() {
         if (recording.get()) {
             return; // Already recording
@@ -132,17 +217,20 @@ public class StreamMonitor implements Runnable {
                 // Create channel-specific directory structure
                 File outputDir = createChannelDirectory();
                 
+                // Build quality parameter with fallback
+                String qualityParam = buildQualityWithFallback(channelEntry.getQuality());
+                
                 ProcessBuilder pb = new ProcessBuilder();
                 pb.command(
                     settings.getStreamlinkPath(),
                     channelEntry.getChannelUrl(),
-                    channelEntry.getQuality(),
+                    qualityParam,
                     "-o", outputFile
                 );
                 pb.directory(outputDir);
                 
-                logMessage(String.format("[%s] Recording to: %s%s%s", 
-                    channelEntry.getPlatform(), outputDir.getAbsolutePath(), File.separator, outputFile));
+                logMessage(String.format("[%s] Recording to: %s%s%s (Quality: %s)", 
+                    channelEntry.getPlatform(), outputDir.getAbsolutePath(), File.separator, outputFile, qualityParam));
                 
                 Process process = pb.start();
                 currentRecordingProcess = process; // Store reference to current process
