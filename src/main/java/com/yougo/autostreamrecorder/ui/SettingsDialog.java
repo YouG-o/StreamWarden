@@ -18,6 +18,7 @@ public class SettingsDialog extends Dialog<Boolean> {
     private Spinner<Integer> defaultCheckIntervalSpinner;
     private ComboBox<String> defaultQualityCombo;
     private CheckBox minimizeToTrayCheckBox;
+    private CheckBox recordHighFpsCheckBox;
     
     private AppSettings settings;
     
@@ -92,10 +93,16 @@ public class SettingsDialog extends Dialog<Boolean> {
         // Default Quality
         grid.add(new Label("Default Quality:"), 0, row);
         defaultQualityCombo = new ComboBox<>(FXCollections.observableArrayList(
-            "best", "1080p", "720p", "480p", "360p", "audio_only"
+            "4k", "1080p", "720p", "480p", "360p", "240p", "144p", "audio_only"
         ));
         defaultQualityCombo.setPrefWidth(150);
         grid.add(defaultQualityCombo, 1, row);
+        row++;
+        
+        // Record High FPS
+        grid.add(new Label("High FPS Recording:"), 0, row);
+        recordHighFpsCheckBox = new CheckBox("Record at more than 30 fps (if available)");
+        grid.add(recordHighFpsCheckBox, 1, row, 2, 1);
         row++;
         
         // Minimize to Tray
@@ -120,6 +127,7 @@ public class SettingsDialog extends Dialog<Boolean> {
         autoStartMonitoringCheckBox.setSelected(settings.isAutoStartMonitoring());
         defaultCheckIntervalSpinner.getValueFactory().setValue(settings.getDefaultCheckInterval());
         defaultQualityCombo.setValue(settings.getDefaultQuality());
+        recordHighFpsCheckBox.setSelected(settings.isRecordHighFps());
         minimizeToTrayCheckBox.setSelected(settings.isMinimizeToTray());
     }
     
@@ -131,6 +139,7 @@ public class SettingsDialog extends Dialog<Boolean> {
         settings.setAutoStartMonitoring(autoStartMonitoringCheckBox.isSelected());
         settings.setDefaultCheckInterval(defaultCheckIntervalSpinner.getValue());
         settings.setDefaultQuality(defaultQualityCombo.getValue());
+        settings.setRecordHighFps(recordHighFpsCheckBox.isSelected());
         settings.setMinimizeToTray(minimizeToTrayCheckBox.isSelected());
         
         // Save to file

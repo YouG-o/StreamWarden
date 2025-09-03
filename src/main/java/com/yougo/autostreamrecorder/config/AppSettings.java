@@ -28,9 +28,10 @@ public class AppSettings {
     private String outputDirectory = getDefaultDownloadsDirectory();
     private boolean autoStartMonitoring = true;
     private int defaultCheckInterval = 60;
-    private String defaultQuality = "best";
+    private String defaultQuality = "1080p";
     private boolean minimizeToTray = false;
     private boolean showActivityLogs = false;
+    private boolean recordHighFps = true;
 
     /**
      * Get the default Downloads directory based on the operating system
@@ -129,6 +130,14 @@ public class AppSettings {
     public void setShowActivityLogs(boolean showActivityLogs) {
         this.showActivityLogs = showActivityLogs;
         save();
+    }
+    
+    public boolean isRecordHighFps() {
+        return recordHighFps;
+    }
+    
+    public void setRecordHighFps(boolean recordHighFps) {
+        this.recordHighFps = recordHighFps;
     }
     
     /**
