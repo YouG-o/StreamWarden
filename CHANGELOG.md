@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Platform icons display in channel dialog and main table view for better visual identification.
 - Context menu on channel rows with "Edit", "Remove" and "Open in Browser" actions for quick access.
 - Settings dialog for configuring output directory, monitoring behavior, and application preferences.
+- Quality fallback system to ensure recordings start even when exact quality is unavailable.
+- High FPS recording preference setting to control framerate priority (30+fps or not).
+- Support for FPS variants in quality selection (e.g., 1080p60, 720p30).
+- Actual recording quality detection and logging.
+
 
 ---
 

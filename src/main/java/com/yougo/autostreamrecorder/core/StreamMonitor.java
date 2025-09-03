@@ -114,6 +114,84 @@ public class StreamMonitor implements Runnable {
         }
     }
     
+    private static final String[] BASE_QUALITY_ORDER = {
+        "4k", "1080p", "720p", "480p", "360p", "240p", "144p"
+    };
+    
+    /**
+     * Build quality parameter with automatic fallback based on quality hierarchy
+     * This ensures recording starts even if the exact quality isn't available
+     */
+    private String buildQualityWithFallback(String requestedQuality) {
+        
+        StringBuilder qualityChain = new StringBuilder();
+        
+        // Extract base quality (remove any trailing numbers like "60" from "1080p60")
+        String baseQuality = requestedQuality.replaceAll("\\d+$", "");
+        
+        // Find the position of the requested base quality
+        int startIndex = -1;
+        for (int i = 0; i < BASE_QUALITY_ORDER.length; i++) {
+            if (BASE_QUALITY_ORDER[i].equals(baseQuality)) {
+                startIndex = i;
+                break;
+            }
+        }
+        
+        // If quality not found in our hierarchy, try it first then fallback
+        if (startIndex == -1) {
+            return requestedQuality + ",worst";
+        }
+        
+        // Generate quality chain from requested quality downwards
+        for (int i = startIndex; i < BASE_QUALITY_ORDER.length; i++) {
+            String currentBase = BASE_QUALITY_ORDER[i];
+            
+            // Generate FPS variants for this quality level
+            String[] variants = generateQualityVariants(currentBase);
+            
+            for (String variant : variants) {
+                if (qualityChain.length() > 0) {
+                    qualityChain.append(",");
+                }
+                qualityChain.append(variant);
+            }
+        }
+        
+        // Add "worst" as final fallback
+        qualityChain.append(",worst");
+        
+        return qualityChain.toString();
+    }
+    
+    /**
+     * Generate quality variants for a base quality (e.g., "1080p" -> ["1080p60", "1080p50", "1080p30", "1080p"])
+     * Order depends on user's high FPS preference
+     */
+    private String[] generateQualityVariants(String baseQuality) {
+        boolean recordHighFps = settings.isRecordHighFps();
+        
+        if (recordHighFps) {
+            // High FPS preference: prioritize 60fps, 50fps, then standard fps
+            return new String[] {
+                baseQuality + "60",
+                baseQuality + "50", 
+                baseQuality,
+                baseQuality + "30",
+                baseQuality + "25",
+                baseQuality + "24"
+            };
+        } else {
+            // Standard FPS preference: prioritize 30fps and below, avoid high fps
+            return new String[] {
+                baseQuality,
+                baseQuality + "30",
+                baseQuality + "25",
+                baseQuality + "24"
+            };
+        }
+    }
+    
     private void startRecording() {
         if (recording.get()) {
             return; // Already recording
@@ -132,36 +210,70 @@ public class StreamMonitor implements Runnable {
                 // Create channel-specific directory structure
                 File outputDir = createChannelDirectory();
                 
+                // Build quality parameter with fallback
+                String qualityParam = buildQualityWithFallback(channelEntry.getQuality());
+                
                 ProcessBuilder pb = new ProcessBuilder();
                 pb.command(
                     settings.getStreamlinkPath(),
                     channelEntry.getChannelUrl(),
-                    channelEntry.getQuality(),
+                    qualityParam,
                     "-o", outputFile
                 );
                 pb.directory(outputDir);
                 
-                logMessage(String.format("[%s] Recording to: %s%s%s", 
+                logMessage(String.format("[%s] Starting recording to: %s%s%s", 
                     channelEntry.getPlatform(), outputDir.getAbsolutePath(), File.separator, outputFile));
                 
                 Process process = pb.start();
                 currentRecordingProcess = process; // Store reference to current process
                 
-                // Read process output
+                // Variables to track the actual quality used
+                String actualQuality = "unknown";
+                boolean qualityFound = false;
+                
+                // Read process output to extract actual quality used
                 try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(process.getInputStream()))) {
+                        new InputStreamReader(process.getInputStream()));
+                     BufferedReader errorReader = new BufferedReader(
+                        new InputStreamReader(process.getErrorStream()))) {
+                    
                     String line;
+                    
+                    // Read stdout
                     while ((line = reader.readLine()) != null && recording.get()) {
-                        // Optional: log streamlink output for debugging
-                        // logMessage(line);
+                        // Look for quality information in streamlink output
+                        if (!qualityFound) {
+                            String extractedQuality = extractQualityFromOutput(line);
+                            if (extractedQuality != null) {
+                                actualQuality = extractedQuality;
+                                qualityFound = true;
+                                logMessage(String.format("[%s] Recording quality: %s", 
+                                    channelEntry.getPlatform(), actualQuality));
+                            }
+                        }
+                    }
+                    
+                    // Also check stderr for quality information
+                    String errorLine;
+                    while ((errorLine = errorReader.readLine()) != null && recording.get()) {
+                        if (!qualityFound) {
+                            String extractedQuality = extractQualityFromOutput(errorLine);
+                            if (extractedQuality != null) {
+                                actualQuality = extractedQuality;
+                                qualityFound = true;
+                                logMessage(String.format("[%s] Recording quality: %s", 
+                                    channelEntry.getPlatform(), actualQuality));
+                            }
+                        }
                     }
                 }
                 
                 int exitCode = process.waitFor();
                 
                 if (exitCode == 0) {
-                    logMessage(String.format("[%s] Recording completed successfully: %s", 
-                        channelEntry.getPlatform(), outputFile));
+                    logMessage(String.format("[%s] Recording completed successfully: %s (Quality: %s)", 
+                        channelEntry.getPlatform(), outputFile, actualQuality));
                 } else {
                     logMessage(String.format("[%s] Recording ended with exit code %d: %s", 
                         channelEntry.getPlatform(), exitCode, channelEntry.getChannelName()));
@@ -179,6 +291,40 @@ public class StreamMonitor implements Runnable {
         
         recordingThread.setDaemon(true);
         recordingThread.start();
+    }
+    
+    /**
+     * Extract the actual quality used from Streamlink output
+     * Streamlink typically outputs something like "Opening stream: 1080p60 (hls)"
+     */
+    private String extractQualityFromOutput(String line) {
+        if (line == null) {
+            return null;
+        }
+        
+        // Common patterns in Streamlink output for quality information
+        // Pattern 1: "Opening stream: 1080p60 (hls)"
+        Pattern pattern1 = Pattern.compile("Opening stream: ([^\\s\\(]+)");
+        java.util.regex.Matcher matcher1 = pattern1.matcher(line);
+        if (matcher1.find()) {
+            return matcher1.group(1);
+        }
+        
+        // Pattern 2: "Selected quality: 720p"
+        Pattern pattern2 = Pattern.compile("Selected quality: ([^\\s]+)");
+        java.util.regex.Matcher matcher2 = pattern2.matcher(line);
+        if (matcher2.find()) {
+            return matcher2.group(1);
+        }
+        
+        // Pattern 3: "Available streams for ..." followed by quality selection
+        Pattern pattern3 = Pattern.compile("Stream ended, will restart.*quality ([^\\s]+)");
+        java.util.regex.Matcher matcher3 = pattern3.matcher(line);
+        if (matcher3.find()) {
+            return matcher3.group(1);
+        }
+        
+        return null;
     }
     
     /**

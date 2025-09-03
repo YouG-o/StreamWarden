@@ -107,9 +107,9 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
         // Quality selection
         grid.add(new Label("Quality:"), 0, 2);
         qualityCombo = new ComboBox<>(FXCollections.observableArrayList(
-            "best", "1080p", "720p", "480p", "360p", "audio_only"
+            "4k", "1080p", "720p", "480p", "360p", "240p", "144p"
         ));
-        qualityCombo.setValue(settings.getDefaultQuality()); // Use default from settings
+        qualityCombo.setValue(settings.getDefaultQuality());
         grid.add(qualityCombo, 1, 2);
         
         // Check interval
