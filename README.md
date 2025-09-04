@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![AutoStreamRecorder icon](./assets/images/icon.png)
+![AutoStreamRecorder icon](./assets/images/app_icon.png)
 
 # AutoStreamRecorder
 
