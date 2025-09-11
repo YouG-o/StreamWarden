@@ -1,9 +1,9 @@
-package com.yougo.autostreamrecorder.config;
+package com.yougo.streamwarden.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.yougo.autostreamrecorder.ChannelEntry;
+import com.yougo.streamwarden.ChannelEntry;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 

@@ -1,6 +1,6 @@
-package com.yougo.autostreamrecorder.ui;
+package com.yougo.streamwarden.ui;
 
-import com.yougo.autostreamrecorder.config.AppSettings;
+import com.yougo.streamwarden.config.AppSettings;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;

@@ -1,4 +1,4 @@
-package com.yougo.autostreamrecorder;
+package com.yougo.streamwarden;
 
 import javafx.beans.property.*;
 

@@ -63,9 +63,9 @@ ehthumbs.db
 Thumbs.db
 
 # Application specific
-bin/
-recordings/
-config.json
+/bin
+/config
+/recordings
 *.ts
 *.mp4
 *.mkv
@@ -79,5 +79,3 @@ config.json
 
 # JavaFX specific
 out/
-
-config/

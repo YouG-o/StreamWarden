@@ -1,11 +1,11 @@
-package com.yougo.autostreamrecorder;
+package com.yougo.streamwarden;
 
-import com.yougo.autostreamrecorder.config.AppSettings;
-import com.yougo.autostreamrecorder.config.ChannelConfig;
-import com.yougo.autostreamrecorder.core.MonitoringService;
-import com.yougo.autostreamrecorder.core.StreamMonitor;
-import com.yougo.autostreamrecorder.ui.AddChannelDialog;
-import com.yougo.autostreamrecorder.ui.SettingsDialog;
+import com.yougo.streamwarden.config.AppSettings;
+import com.yougo.streamwarden.config.ChannelConfig;
+import com.yougo.streamwarden.core.MonitoringService;
+import com.yougo.streamwarden.core.StreamMonitor;
+import com.yougo.streamwarden.ui.AddChannelDialog;
+import com.yougo.streamwarden.ui.SettingsDialog;
 import java.io.InputStream;
 import java.util.Optional;
 import javafx.animation.KeyFrame;
@@ -48,7 +48,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("AutoStreamRecorder");
+        primaryStage.setTitle("StreamWarden");
         
         // Load settings
         appSettings = AppSettings.load();
@@ -776,7 +776,7 @@ public class Main extends Application {
      */
     private void showSupportDialog() {
         Dialog<Void> supportDialog = new Dialog<>();
-        supportDialog.setTitle("Support AutoStreamRecorder");
+        supportDialog.setTitle("Support StreamWarden");
         supportDialog.setHeaderText("Support This Project");
         
         // Create dialog content

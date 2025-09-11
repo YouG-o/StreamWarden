@@ -2,9 +2,9 @@
 
 <div align="center">
 
-![AutoStreamRecorder icon](./assets/images/app_icon.png)
+![StreamWarden icon](./assets/images/app_icon.png)
 
-# AutoStreamRecorder
+# StreamWarden : Auto Stream Recorder
 
 Desktop app to automatically monitor Twitch / YouTube / Kick channels and record livestreams as soon as they go live.
 
@@ -66,8 +66,8 @@ The application uses Streamlink under the hood for reliable stream capture and s
   ### Installation
   ```bash
   # Clone the repository
-  git clone https://github.com/YouG-o/AutoStreamRecorder.git
-  cd AutoStreamRecorder
+  git clone https://github.com/YouG-o/StreamWarden.git
+  cd StreamWarden
 
   # Build the application
   mvn clean javafx:run

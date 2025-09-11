@@ -1,4 +1,4 @@
-package com.yougo.autostreamrecorder.config;
+package com.yougo.streamwarden.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -42,10 +42,10 @@ public class AppSettings {
         
         if (os.contains("win")) {
             // Windows: %USERPROFILE%\Downloads
-            return userHome + File.separator + "Downloads" + File.separator + "AutoStreamRecorder";
+            return userHome + File.separator + "Downloads" + File.separator + "StreamWarden";
         } else {
             // Linux/Mac: ~/Downloads
-            return userHome + File.separator + "Downloads" + File.separator + "AutoStreamRecorder";
+            return userHome + File.separator + "Downloads" + File.separator + "StreamWarden";
         }
     }
 

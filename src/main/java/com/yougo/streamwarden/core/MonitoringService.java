@@ -1,7 +1,7 @@
-package com.yougo.autostreamrecorder.core;
+package com.yougo.streamwarden.core;
 
-import com.yougo.autostreamrecorder.ChannelEntry;
-import com.yougo.autostreamrecorder.config.AppSettings;
+import com.yougo.streamwarden.ChannelEntry;
+import com.yougo.streamwarden.config.AppSettings;
 import javafx.collections.ObservableList;
 
 import java.util.concurrent.ConcurrentHashMap;
