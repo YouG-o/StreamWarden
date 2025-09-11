@@ -102,6 +102,32 @@ public class StreamMonitor implements Runnable {
             pb.command(settings.getStreamlinkPath(), channelEntry.getChannelUrl(), "--json");
             
             Process process = pb.start();
+            
+            // Consume output streams to prevent deadlock on Windows
+            Thread outputConsumer = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    while (reader.readLine() != null) {
+                        // Consume stdout to prevent buffer overflow
+                    }
+                } catch (IOException e) {
+                    // Ignore IOException during stream consumption
+                }
+            });
+            outputConsumer.setDaemon(true);
+            outputConsumer.start();
+            
+            Thread errorConsumer = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    while (reader.readLine() != null) {
+                        // Consume stderr to prevent buffer overflow on Windows systems
+                    }
+                } catch (IOException e) {
+                    // Ignore IOException during stream consumption
+                }
+            });
+            errorConsumer.setDaemon(true);
+            errorConsumer.start();
+            
             int exitCode = process.waitFor();
             
             // Streamlink returns 0 if stream is available, non-zero if not

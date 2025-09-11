@@ -142,23 +142,61 @@ public class AppSettings {
     
     /**
      * Get the path to streamlink executable based on OS and availability
+     * Logs which streamlink is used and its version.
      */
     public String getStreamlinkPath() {
         String os = System.getProperty("os.name").toLowerCase();
+        String streamlinkPath;
         if (os.contains("win")) {
-            // Windows: try bundled first, fallback to system
-            String bundledPath = "bin" + File.separator + "windows" + File.separator + 
-                                "streamlink-7.5.0-1-py313-x86_64" + File.separator + 
-                                "bin" + File.separator + "streamlink.exe";
-            File bundledFile = new File(bundledPath);
-            if (bundledFile.exists()) {
-                return bundledPath;
+            // Windows: try to find any streamlink folder in bin/windows/
+            File windowsBinDir = new File("bin" + File.separator + "windows");
+            if (windowsBinDir.exists() && windowsBinDir.isDirectory()) {
+                File[] candidates = windowsBinDir.listFiles((dir, name) -> name.startsWith("streamlink") && new File(dir, name).isDirectory());
+                if (candidates != null && candidates.length > 0) {
+                    // Use the first matching streamlink folder
+                    File streamlinkDir = candidates[0];
+                    String bundledPath = streamlinkDir.getPath() + File.separator + "bin" + File.separator + "streamlink.exe";
+                    File bundledFile = new File(bundledPath);
+                    if (bundledFile.exists()) {
+                        streamlinkPath = bundledPath;
+                        System.out.println("[AppSettings] Using bundled Streamlink: " + streamlinkPath + " (version: " + getStreamlinkVersion(streamlinkPath) + ")");
+                        return streamlinkPath;
+                    }
+                }
             }
-            return "streamlink"; // Fallback to system PATH
+            streamlinkPath = "streamlink";
+            System.out.println("[AppSettings] Using system Streamlink from PATH (version: " + getStreamlinkVersion(streamlinkPath) + ")");
+            return streamlinkPath;
         } else {
-            // Linux: use system installation
-            return "streamlink";
+            // Linux/Mac: use system installation
+            streamlinkPath = "streamlink";
+            System.out.println("[AppSettings] Using system Streamlink from PATH (version: " + getStreamlinkVersion(streamlinkPath) + ")");
+            return streamlinkPath;
         }
+    }
+
+    /**
+     * Get Streamlink version for a given executable path.
+     */
+    private String getStreamlinkVersion(String streamlinkPath) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(streamlinkPath, "--version");
+            Process process = pb.start();
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String versionLine = reader.readLine();
+                if (versionLine != null && versionLine.contains("streamlink")) {
+                    String[] parts = versionLine.split(" ");
+                    if (parts.length >= 2) {
+                        return parts[1];
+                    }
+                }
+            }
+            process.waitFor();
+        } catch (Exception e) {
+            return "unknown";
+        }
+        return "unknown";
     }
     
     /**
