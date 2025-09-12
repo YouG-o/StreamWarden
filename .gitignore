@@ -66,6 +66,7 @@ Thumbs.db
 /bin
 /config
 /recordings
+/StreamWarden_Win_Portable
 *.ts
 *.mp4
 *.mkv

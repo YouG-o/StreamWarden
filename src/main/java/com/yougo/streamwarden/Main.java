@@ -109,6 +109,18 @@ public class Main extends Application {
             // Show shutdown modal
             showShutdownModal(primaryStage);
         });
+        
+        // Set application icon
+        try {
+            javafx.scene.image.Image appIcon = new javafx.scene.image.Image(
+                getClass().getResourceAsStream("/assets/icons/app_icon.png")
+            );
+            primaryStage.getIcons().add(appIcon);
+            // Optionally log success
+            System.out.println("Application icon loaded successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to load application icon: " + e.getMessage());
+        }
     }
     
     private HBox createToolbar() {

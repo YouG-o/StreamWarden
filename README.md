@@ -56,23 +56,58 @@ The application uses Streamlink under the hood for reliable stream capture and s
 
 </div>
 
-  For now, the only way for you to run the app is to build it yourself: 
+  For now, the only way to run the app is to build it yourself.  
+Choose the method that fits your needs:
 
-  ### Prerequisites
-  - Java 17 or higher
-  - Maven 3.6+
-  - **Streamlink** installed on your system (7.3.0 or higher for Kick support)
+---
 
-  ### Installation
-  ```bash
-  # Clone the repository
-  git clone https://github.com/YouG-o/StreamWarden.git
-  cd StreamWarden
+### 0. Clone the repository
+```
+# Clone the repository
+git clone https://github.com/YouG-o/StreamWarden.git
+cd StreamWarden
+```
 
-  # Build the application
-  mvn clean javafx:run
-  ```
+### 1. Development Build (Cross-platform)
 
+#### Prerequisites
+- Java Development Kit (JDK) 17 or higher (not just the JRE)
+- Maven 3.6+
+- **Streamlink** installed on your system (7.3.0 or higher for Kick support) (tested on 7.6.0)
+- **Python** (required by Streamlink)
+
+#### Installation & Run
+```bash
+# Build and run the application in development mode
+mvn clean javafx:run
+```
+This will launch the app directly from source.  
+You must have Streamlink and Python installed and available in your system PATH.
+
+---
+
+### 2. Windows: Build a Portable Executable
+
+If you are on Windows, you can generate a portable `.exe` version of StreamWarden using the provided batch script:
+
+```bat
+build-windows-portable.bat
+```
+
+This script will:
+- Automatically download and prepare all required native dependencies (Streamlink portable and JavaFX DLLs)
+- Build the application with Maven
+- Package everything into a portable app-image using jpackage
+
+#### How to use:
+1. Make sure you have the Java Development Kit (JDK) 17 or higher (not just the JRE) and Maven installed.
+2. Open a terminal in the project root directory.
+3. Run the script
+4. After completion, you will find the portable executable in the `StreamWarden_Win_Portable` folder.
+
+No manual setup of the `bin` folder is required—the script handles everything for you!
+
+---
 
 ###
 
