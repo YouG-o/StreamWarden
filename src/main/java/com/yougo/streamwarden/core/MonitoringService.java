@@ -42,20 +42,20 @@ public class MonitoringService {
         this.statusCallback = callback;
     }
     
-    public void startMonitoring(ChannelEntry channelEntry, int checkInterval) {
+    public void startMonitoring(ChannelEntry channelEntry) {
         String key = getChannelKey(channelEntry);
-        
+
         if (activeMonitors.containsKey(key)) {
             System.out.println("Already monitoring: " + key);
             return;
         }
-        
-        StreamMonitor monitor = new StreamMonitor(channelEntry, settings, checkInterval);
+
+        StreamMonitor monitor = new StreamMonitor(channelEntry, settings);
         monitor.setStatusCallback(statusCallback);
-        
+
         activeMonitors.put(key, monitor);
         executorService.submit(monitor);
-        
+
         System.out.println("Started monitoring: " + key);
     }
     
@@ -72,7 +72,7 @@ public class MonitoringService {
     public void startAllActiveChannels(ObservableList<ChannelEntry> channels) {
         for (ChannelEntry channel : channels) {
             if (channel.getIsActive()) {
-                startMonitoring(channel, settings.getDefaultCheckInterval());
+                startMonitoring(channel);
             }
         }
     }

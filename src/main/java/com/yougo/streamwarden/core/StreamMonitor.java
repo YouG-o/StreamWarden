@@ -30,6 +30,12 @@ public class StreamMonitor implements Runnable {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean recording = new AtomicBoolean(false);
     private final int checkInterval;
+
+    public StreamMonitor(ChannelEntry channelEntry, AppSettings settings) {
+        this.channelEntry = channelEntry;
+        this.settings = settings;
+        this.checkInterval = settings.getDefaultCheckInterval();
+    }
     
     // Add reference to the current recording process
     private volatile Process currentRecordingProcess = null;
@@ -42,12 +48,6 @@ public class StreamMonitor implements Runnable {
     
     private StatusCallback statusCallback;
     
-    public StreamMonitor(ChannelEntry channelEntry, AppSettings settings, int checkInterval) {
-        this.channelEntry = channelEntry;
-        this.settings = settings;
-        this.checkInterval = checkInterval;
-    }
-    
     public void setStatusCallback(StatusCallback callback) {
         this.statusCallback = callback;
     }
@@ -55,19 +55,30 @@ public class StreamMonitor implements Runnable {
     @Override
     public void run() {
         running.set(true);
+        boolean lastOnlineStatus = false; // Track previous online status
         updateStatus("Offline"); // Start with Offline status when monitoring begins
         logMessage(String.format("[%s] Started monitoring channel: %s", 
             channelEntry.getPlatform(), channelEntry.getChannelName()));
-        
+
         while (running.get() && channelEntry.getIsActive()) {
             try {
-                if (isStreamLive()) {
+                boolean isOnline = isStreamLive();
+                if (isOnline) {
+                    if (!lastOnlineStatus) {
+                        logMessage(String.format("[%s] Channel %s is now online.", 
+                            channelEntry.getPlatform(), channelEntry.getChannelName()));
+                    }
+                    lastOnlineStatus = true;
                     if (!recording.get()) {
                         startRecording();
                     }
-                    // Wait longer when recording to avoid spamming
                     Thread.sleep(30 * 1000L); // 30 seconds when recording
                 } else {
+                    if (lastOnlineStatus) {
+                        logMessage(String.format("[%s] Channel %s is now offline.", 
+                            channelEntry.getPlatform(), channelEntry.getChannelName()));
+                    }
+                    lastOnlineStatus = false;
                     if (recording.get()) {
                         // Stream ended, recording will stop automatically
                         recording.set(false);
@@ -75,16 +86,12 @@ public class StreamMonitor implements Runnable {
                         logMessage(String.format("[%s] Stream ended for: %s", 
                             channelEntry.getPlatform(), channelEntry.getChannelName()));
                     } else {
-                        // Ensure status shows Offline when not recording
                         updateStatus("Offline");
-                        // Only log every few checks to avoid spam
-                        logMessage(String.format("[%s] Channel %s is offline, waiting %d seconds...", 
-                            channelEntry.getPlatform(), channelEntry.getChannelName(), checkInterval));
+                        // No log here to avoid spam
                     }
-                    
                     Thread.sleep(checkInterval * 1000L);
                 }
-                
+
             } catch (InterruptedException e) {
                 logMessage(String.format("[%s] Monitor interrupted for: %s", 
                     channelEntry.getPlatform(), channelEntry.getChannelName()));
@@ -99,7 +106,7 @@ public class StreamMonitor implements Runnable {
                 }
             }
         }
-        
+
         running.set(false);
         updateStatus(""); // Clear status when not monitoring
         logMessage(String.format("[%s] Stopped monitoring: %s", 

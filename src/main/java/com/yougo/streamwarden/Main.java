@@ -551,7 +551,7 @@ public class Main extends Application {
             
             // If the new channel is active, start monitoring it immediately
             if (channelEntry.getIsActive()) {
-                monitoringService.startMonitoring(channelEntry, appSettings.getDefaultCheckInterval());
+                monitoringService.startMonitoring(channelEntry);
                 logArea.appendText(String.format("[System] Started monitoring %s: %s\n", 
                     channelEntry.getPlatform(), channelEntry.getChannelName()));
             }

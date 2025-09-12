@@ -48,17 +48,15 @@ public class ChannelConfig {
         public String channelUrl;
         public boolean isActive;
         public String quality;
-        public int checkInterval = 60;
         
         public ChannelData() {}
         
-        public ChannelData(ChannelEntry entry, int checkInterval) {
+        public ChannelData(ChannelEntry entry) {
             this.platform = entry.getPlatform();
             this.channelName = entry.getChannelName();
             this.channelUrl = entry.getChannelUrl();
             this.isActive = entry.getIsActive();
             this.quality = entry.getQuality();
-            this.checkInterval = checkInterval;
         }
         
         public ChannelEntry toChannelEntry() {
@@ -114,7 +112,7 @@ public class ChannelConfig {
     public static List<ChannelData> fromObservableList(ObservableList<ChannelEntry> channelEntries) {
         List<ChannelData> channels = new ArrayList<>();
         for (ChannelEntry entry : channelEntries) {
-            channels.add(new ChannelData(entry, 60)); // Default check interval
+            channels.add(new ChannelData(entry));
         }
         return channels;
     }
@@ -122,9 +120,9 @@ public class ChannelConfig {
     /**
      * Add a single channel and save
      */
-    public static void addChannel(ChannelEntry entry, int checkInterval) {
+    public static void addChannel(ChannelEntry entry) {
         List<ChannelData> channels = loadChannels();
-        channels.add(new ChannelData(entry, checkInterval));
+        channels.add(new ChannelData(entry));
         saveChannels(channels);
     }
     

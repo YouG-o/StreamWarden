@@ -32,7 +32,6 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
     private ComboBox<String> platformCombo;
     private TextField channelNameField;
     private ComboBox<String> qualityCombo;
-    private Spinner<Integer> checkIntervalSpinner;
     private CheckBox enabledCheckBox;
     private boolean isEditMode = false;
     
@@ -122,16 +121,10 @@ public class AddChannelDialog extends Dialog<ChannelEntry> {
         qualityCombo.setValue(settings.getDefaultQuality());
         grid.add(qualityCombo, 1, 2);
         
-        // Check interval
-        grid.add(new Label("Check Interval (seconds):"), 0, 3);
-        checkIntervalSpinner = new Spinner<>(10, 3600, settings.getDefaultCheckInterval(), 10); // Use default from settings
-        checkIntervalSpinner.setEditable(true);
-        grid.add(checkIntervalSpinner, 1, 3);
-        
         // Enabled checkbox
         enabledCheckBox = new CheckBox("Enable monitoring");
         enabledCheckBox.setSelected(true);
-        grid.add(enabledCheckBox, 1, 4);
+        grid.add(enabledCheckBox, 1, 3);
         
         return grid;
     }
