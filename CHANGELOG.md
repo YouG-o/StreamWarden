@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - High FPS recording preference setting to control framerate priority (30+fps or not).
 - Support for FPS variants in quality selection (e.g., 1080p60, 720p30).
 - Actual recording quality detection and logging.
+- Minimize in system tray feature
 
 
 ---

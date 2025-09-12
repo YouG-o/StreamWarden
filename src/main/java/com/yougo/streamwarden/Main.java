@@ -16,8 +16,10 @@ import com.yougo.streamwarden.core.MonitoringService;
 import com.yougo.streamwarden.core.StreamMonitor;
 import com.yougo.streamwarden.ui.AddChannelDialog;
 import com.yougo.streamwarden.ui.SettingsDialog;
+import com.yougo.streamwarden.ui.TraySupport;
 import java.io.InputStream;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
@@ -55,6 +57,7 @@ public class Main extends Application {
     private CheckBox showLogsCheckBox;
     private MonitoringService monitoringService;
     private AppSettings appSettings;
+    private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
     @Override
     public void start(Stage primaryStage) {
@@ -101,13 +104,11 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
         
-        // Shutdown monitoring service when closing
+        // Shutdown monitoring service when closing (via window close button)
         primaryStage.setOnCloseRequest(e -> {
-            // Consume the event to prevent immediate closure
+            // Prevent immediate closure; run our graceful shutdown and real exit
             e.consume();
-            
-            // Show shutdown modal
-            showShutdownModal(primaryStage);
+            requestAppExit(primaryStage);
         });
         
         // Set application icon
@@ -121,6 +122,17 @@ public class Main extends Application {
         } catch (Exception e) {
             System.err.println("Failed to load application icon: " + e.getMessage());
         }
+        
+        // Install/uninstall tray integration based on settings
+        updateTrayIntegration(primaryStage);
+
+        // If minimized and minimizeToTray is enabled, hide to tray (no taskbar entry)
+        primaryStage.iconifiedProperty().addListener((obs, wasIconified, isIconified) -> {
+            if (isIconified && appSettings.isMinimizeToTray() && TraySupport.isInstalled()) {
+                primaryStage.hide();
+                TraySupport.displayInfo("StreamWarden", "Still running in the system tray");
+            }
+        });
     }
     
     private HBox createToolbar() {
@@ -558,12 +570,50 @@ public class Main extends Application {
         });
     }
     
+    private void updateTrayIntegration(Stage primaryStage) {
+        if (appSettings.isMinimizeToTray() && TraySupport.isSupported()) {
+            // Keep FX alive when window is hidden to tray
+            Platform.setImplicitExit(false);
+            // Tray "Exit" should perform full shutdown
+            TraySupport.install(primaryStage, () -> Platform.runLater(() -> requestAppExit(primaryStage)));
+        } else {
+            TraySupport.uninstall();
+            Platform.setImplicitExit(true);
+        }
+    }
+
+    /**
+     * Initiate graceful shutdown and exit JVM once done.
+     */
+    private void requestAppExit(Stage primaryStage) {
+        if (!shuttingDown.compareAndSet(false, true)) {
+            return; // Shutdown already in progress
+        }
+        // Remove tray icon so the user cannot reopen during shutdown
+        TraySupport.uninstall();
+        // Ensure JavaFX will stop once last window closes
+        Platform.setImplicitExit(true);
+
+        showShutdownModal(primaryStage, () -> {
+            // Close primary stage if still showing
+            if (primaryStage.isShowing()) {
+                primaryStage.close();
+            }
+            // Exit JavaFX and then the JVM to kill any non-daemon threads (AWT, stream watchers, etc.)
+            Platform.exit();
+            System.exit(0);
+        });
+    }
+
     private void showSettingsDialog() {
         boolean settingsChanged = SettingsDialog.showDialog();
         if (settingsChanged) {
             // Reload settings in case they changed
             appSettings = AppSettings.load();
             logArea.appendText("[System] Settings updated successfully\n");
+
+            // Re-apply tray behavior based on new setting
+            updateTrayIntegration((Stage) channelTable.getScene().getWindow());
         }
     }
     
@@ -618,91 +668,79 @@ public class Main extends Application {
     }
 
     /**
-     * Show shutdown modal while properly closing active recordings
+     * Show shutdown modal while properly closing active recordings.
+     * onComplete is executed after shutdown finishes to perform final exit logic.
      */
-    private void showShutdownModal(Stage primaryStage) {
+    private void showShutdownModal(Stage primaryStage, Runnable onComplete) {
         // Create modal dialog
         Stage shutdownStage = new Stage();
         shutdownStage.initModality(Modality.APPLICATION_MODAL);
         shutdownStage.initOwner(primaryStage);
         shutdownStage.setTitle("Closing Application");
         shutdownStage.setResizable(false);
-        
+
         // Prevent user from closing this modal
         shutdownStage.setOnCloseRequest(Event::consume);
-        
+
         // Create content
         VBox content = new VBox(20);
         content.setPadding(new Insets(30));
         content.setAlignment(Pos.CENTER);
         content.setStyle("-fx-background-color: white;");
-        
-        // Progress indicator
+
         ProgressIndicator progressIndicator = new ProgressIndicator();
-        progressIndicator.setProgress(-1); // Indeterminate progress
-        
-        // Status label
+        progressIndicator.setProgress(-1);
+
         Label statusLabel = new Label("Stopping active recordings...");
         statusLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
-        
-        // Warning label
+
         Label warningLabel = new Label("Please wait, do not force close the application.");
         warningLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666; -fx-font-style: italic;");
-        
+
         content.getChildren().addAll(progressIndicator, statusLabel, warningLabel);
-        
+
         Scene scene = new Scene(content, 350, 200);
         shutdownStage.setScene(scene);
         shutdownStage.show();
-        
+
         // Center the modal on the parent window
         shutdownStage.setX(primaryStage.getX() + (primaryStage.getWidth() - shutdownStage.getWidth()) / 2);
         shutdownStage.setY(primaryStage.getY() + (primaryStage.getHeight() - shutdownStage.getHeight()) / 2);
-        
+
         // Perform shutdown in background thread
         Task<Void> shutdownTask = new Task<Void>() {
             @Override
             protected Void call() throws Exception {
-                // Update status
                 Platform.runLater(() -> statusLabel.setText("Stopping monitoring services..."));
-                
-                // Shutdown monitoring service
                 monitoringService.shutdown();
-                
-                // Update status
+
                 Platform.runLater(() -> statusLabel.setText("Finalizing shutdown..."));
-                
-                // Small delay to ensure everything is properly closed
-                Thread.sleep(1000);
-                
+                Thread.sleep(500); // small grace period
                 return null;
             }
-            
+
             @Override
             protected void succeeded() {
                 Platform.runLater(() -> {
                     shutdownStage.close();
-                    primaryStage.close();
+                    if (onComplete != null) onComplete.run();
                 });
             }
-            
+
             @Override
             protected void failed() {
                 Platform.runLater(() -> {
                     statusLabel.setText("Shutdown completed with warnings.");
                     statusLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #e74c3c;");
-                    
-                    // Still close the application after a short delay
-                    Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(2), event -> {
+                    Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1.5), event -> {
                         shutdownStage.close();
-                        primaryStage.close();
+                        if (onComplete != null) onComplete.run();
                     }));
                     timeline.play();
                 });
             }
         };
-        
-        // Run shutdown task
+
         Thread shutdownThread = new Thread(shutdownTask);
         shutdownThread.setDaemon(true);
         shutdownThread.start();
