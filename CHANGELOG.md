@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.1.0] - 2025-09-15
+
 ### Added
 - Initial graphical user interface for stream monitoring and recording.
 - Support for monitoring Twitch and YouTube channels.
@@ -31,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Actual recording quality detection and logging.
 - Minimize in system tray feature
 
-
 ---
 
-[Unreleased]: # (To be filled after first release)
+[Unreleased]: https://github.com/YouG-o/StreamWarden/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/YouG-o/StreamWarden/releases/tag/v0.1.0
