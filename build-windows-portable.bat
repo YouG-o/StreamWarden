@@ -17,8 +17,14 @@ if %ERRORLEVEL%==0 (
 )
 
 if "%FOUND_MAVEN%"=="false" (
-    echo [ERROR] Neither mvnd nor mvn found in PATH. Please install Maven.
-    exit /b 1
+    echo [INFO] No Maven found in PATH, downloading Maven Daemon...
+    if not exist "maven-mvnd-1.0.2-windows-amd64" (
+        powershell -Command "Invoke-WebRequest -OutFile mvnd.zip https://dlcdn.apache.org/maven/mvnd/1.0.2/maven-mvnd-1.0.2-windows-amd64.zip"
+        powershell -Command "Expand-Archive -Path mvnd.zip -DestinationPath ."
+        del mvnd.zip
+    )
+    set MAVEN_CMD=%CD%\maven-mvnd-1.0.2-windows-amd64\bin\mvnd.cmd
+    echo [INFO] Using downloaded Maven Daemon: %MAVEN_CMD%
 )
 
 REM Get version from pom.xml
@@ -69,10 +75,10 @@ if exist target rmdir /S /Q target
 if exist %APP_NAME% rmdir /S /Q %APP_NAME%
 
 REM Build the fat jar with all dependencies
-%MAVEN_CMD% clean package
+call %MAVEN_CMD% clean package
 
 REM Generate the portable app-image with jpackage
-jpackage --type app-image ^
+call jpackage --type app-image ^
   --input target ^
   --name %APP_NAME% ^
   --main-jar StreamWarden-%APP_VERSION%-jar-with-dependencies.jar ^

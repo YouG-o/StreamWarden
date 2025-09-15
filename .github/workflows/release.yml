@@ -1,0 +1,50 @@
+name: Build Windows Portable .exe
+
+
+on:
+  release:
+    types: [published]
+
+
+jobs:
+  build-windows-portable:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '22'
+
+      - name: Build Windows Portable
+        shell: cmd
+        run: |
+          set CI_BUILD=true
+          build-windows-portable.bat
+
+      - name: Zip portable folder
+        id: zip_portable
+        shell: pwsh
+        run: |
+          $folder = Get-ChildItem -Directory -Name "StreamWarden_Win_Portable_*" | Select-Object -First 1
+          if ($folder) {
+            $zip = "$folder.zip"
+            Compress-Archive -Path $folder -DestinationPath $zip
+            echo "portable_zip=$zip" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "ERROR: No folder starting with 'StreamWarden_Win_Portable_' found"
+            exit 1
+          }
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.zip_portable.outputs.portable_zip }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
