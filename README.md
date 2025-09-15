@@ -42,6 +42,12 @@ While you can build and run the application in its current state, it contains on
 
 The application uses Streamlink under the hood for reliable stream capture and supports automatic monitoring with customizable check intervals.
 
+<div align="center">
+
+  ## Screenshot:
+
+</div>
+
 ![App screenshot](./assets/images/app_screenshot.png)
 
 </div>
@@ -57,16 +63,17 @@ The application uses Streamlink under the hood for reliable stream capture and s
 </div>
 
   For now, the only way to run the app is to build it yourself.  
-Choose the method that fits your needs:
 
 ---
 
-### 0. Clone the repository
+### Clone the repository
 ```
 # Clone the repository
 git clone https://github.com/YouG-o/StreamWarden.git
 cd StreamWarden
 ```
+
+### Then choose the method that fits your needs:
 
 ### 1. Development Build (Cross-platform)
 
@@ -95,7 +102,7 @@ build-windows-portable.bat
 ```
 
 This script will:
-- Automatically download and prepare all required native dependencies (Streamlink portable and JavaFX DLLs)
+- Automatically download and prepare all required native dependencies (Streamlink portable and JavaFX)
 - Build the application with Maven
 - Package everything into a portable app-image using jpackage
 
@@ -104,8 +111,6 @@ This script will:
 2. Open a terminal in the project root directory.
 3. Run the script
 4. After completion, you will find the portable executable in the `StreamWarden_Win_Portable` folder.
-
-No manual setup of the `bin` folder is required—the script handles everything for you!
 
 ---
 

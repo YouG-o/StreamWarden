@@ -2,17 +2,23 @@
 
 REM Detect Maven command (mvnd or mvn)
 set MAVEN_CMD=
+set FOUND_MAVEN=false
 where mvnd >nul 2>nul
 if %ERRORLEVEL%==0 (
     set MAVEN_CMD=mvnd
+    set FOUND_MAVEN=true
+    echo [INFO] Using mvnd (Maven Daemon)
 ) else (
-    where mvn >nul 2>nul
-    if %ERRORLEVEL%==0 (
+    for /f "tokens=*" %%i in ('where mvn 2^>nul') do (
         set MAVEN_CMD=mvn
-    ) else (
-        echo [ERROR] Neither mvnd nor mvn found in PATH. Please install Maven.
-        exit /b 1
+        set FOUND_MAVEN=true
+        echo [INFO] Using mvn from: %%i
     )
+)
+
+if "%FOUND_MAVEN%"=="false" (
+    echo [ERROR] Neither mvnd nor mvn found in PATH. Please install Maven.
+    exit /b 1
 )
 
 REM Get version from pom.xml
@@ -21,10 +27,19 @@ echo [INFO] Detected version: %APP_VERSION%
 
 set APP_NAME=StreamWarden_Win_Portable_v%APP_VERSION%
 
+REM Check JavaFX SDK presence
+set JAVAFX_SDK_PATH=C:\Program Files\Java\javafx-sdk-24.0.2\lib
+if not exist "%JAVAFX_SDK_PATH%" (
+    echo [INFO] JavaFX SDK not found in Program Files, downloading to project root...
+    powershell -Command "Invoke-WebRequest -OutFile javafx.zip https://download2.gluonhq.com/openjfx/24.0.2/openjfx-24.0.2_windows-x64_bin-sdk.zip"
+    powershell -Command "Expand-Archive -Path javafx.zip -DestinationPath javafx-sdk-24.0.2"
+    del javafx.zip
+    set JAVAFX_SDK_PATH=%CD%\javafx-sdk-24.0.2\javafx-sdk-24.0.2\lib
+)
+
 REM Check if bin/windows exists
 if not exist bin\windows (
     echo [INFO] Creating bin/windows structure...
-
     mkdir bin\windows
 
     REM Download and extract Streamlink portable
@@ -33,16 +48,20 @@ if not exist bin\windows (
     powershell -Command "Expand-Archive -Path streamlink.zip -DestinationPath bin\windows"
     del streamlink.zip
 
-    REM Download and extract JavaFX native DLLs
-    echo [INFO] Downloading JavaFX native DLLs...
-    powershell -Command "Invoke-WebRequest -OutFile javafx.zip https://download2.gluonhq.com/openjfx/24.0.2/openjfx-24.0.2_windows-x64_bin-sdk.zip"
-    powershell -Command "Expand-Archive -Path javafx.zip -DestinationPath bin\windows"
-    del javafx.zip
-
-    REM Move JavaFX DLLs to bin/windows/javafx-natives
-    mkdir bin\windows\javafx-natives
-    xcopy /Y /S bin\windows\javafx-sdk-24.0.2\bin\* bin\windows\javafx-natives\
-    rmdir /S /Q bin\windows\javafx-sdk-24.0.2
+    REM Prepare JavaFX native DLLs
+    if exist "%CD%\javafx-sdk-24.0.2\javafx-sdk-24.0.2\bin" (
+        echo [INFO] Copying JavaFX native DLLs from project root SDK...
+        mkdir bin\windows\javafx-natives
+        xcopy /Y /S "%CD%\javafx-sdk-24.0.2\javafx-sdk-24.0.2\bin" bin\windows\javafx-natives\
+    ) else (
+        echo [INFO] Downloading JavaFX native DLLs...
+        powershell -Command "Invoke-WebRequest -OutFile javafx.zip https://download2.gluonhq.com/openjfx/24.0.2/openjfx-24.0.2_windows-x64_bin-sdk.zip"
+        powershell -Command "Expand-Archive -Path javafx.zip -DestinationPath bin\windows"
+        del javafx.zip
+        mkdir bin\windows\javafx-natives
+        xcopy /Y /S bin\windows\javafx-sdk-24.0.2\bin\* bin\windows\javafx-natives\
+        rmdir /S /Q bin\windows\javafx-sdk-24.0.2
+    )
 )
 
 REM Remove previous build folders if they exist
@@ -58,7 +77,7 @@ jpackage --type app-image ^
   --name %APP_NAME% ^
   --main-jar StreamWarden-%APP_VERSION%-jar-with-dependencies.jar ^
   --main-class com.yougo.streamwarden.Main ^
-  --module-path "C:\Program Files\Java\javafx-sdk-24.0.2\lib" ^
+  --module-path "%JAVAFX_SDK_PATH%" ^
   --add-modules javafx.controls,javafx.fxml ^
   --java-options "-Dprism.order=sw" ^
   --java-options "--enable-native-access=javafx.graphics" ^
@@ -70,4 +89,4 @@ REM Remove the target folder as it is no longer needed
 if exist target rmdir /S /Q target
 
 echo Build complete. You can now run %APP_NAME%.exe from the %APP_NAME% folder.
-pause
+if not "%CI_BUILD%"=="true" pause

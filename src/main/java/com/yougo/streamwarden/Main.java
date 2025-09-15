@@ -859,6 +859,7 @@ public class Main extends Application {
         
         // Ko-fi button with image
         Button kofiButton = createKofiButton();
+        kofiButton.setCursor(javafx.scene.Cursor.HAND);
         
         content.getChildren().addAll(supportText, kofiButton);
         
