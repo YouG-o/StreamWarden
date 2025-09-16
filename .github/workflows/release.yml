@@ -34,6 +34,8 @@ jobs:
         run: |
           $folder = Get-ChildItem -Directory -Name "StreamWarden_Win_Portable_*" | Select-Object -First 1
           if ($folder) {
+            # Copy LICENSE into the portable folder
+            Copy-Item -Path LICENSE -Destination $folder -Force
             $zip = "$folder.zip"
             Compress-Archive -Path $folder -DestinationPath $zip
             echo "portable_zip=$zip" >> $env:GITHUB_OUTPUT

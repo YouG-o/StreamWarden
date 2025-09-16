@@ -1,3 +1,12 @@
+<div align='center'>
+
+  [![Release Version](https://img.shields.io/github/v/release/YouG-o/StreamWarden?style=flat&logo=github&color=2ea44f)](https://github.com/YouG-o/StreamWarden/releases/latest)
+  [![Github Stargazers](https://img.shields.io/github/stars/YouG-o/StreamWarden?style=flat&logo=github&color=f9d71c)](https://github.com/YouG-o/StreamWarden/stargazers)
+  [![Github Contributors](https://img.shields.io/github/contributors/YouG-o/StreamWarden?style=flat&logo=github&color=blue)](https://github.com/YouG-o/StreamWarden/graphs/contributors)
+  ![LICENSE](https://img.shields.io/github/license/YouG-o/StreamWarden?label=&style=flat&logo=license&logoColor=white&color=3da639)
+
+</div>
+
 ###
 
 <div align="center">
@@ -14,15 +23,24 @@ Desktop app to automatically monitor Twitch / YouTube / Kick channels and record
 
 <div align="center">
 
-## ⚠️ Early Development Warning
-
-**This application is currently in early development and has not had its first official release yet.**
-
-While you can build and run the application in its current state, it contains only the basic minimum features for stream monitoring and recording. The functionality works but the user experience is still rough around the edges.
-
-**Use at your own discretion** - expect bugs, missing features, and potential breaking changes.
+## 🚀 Install
 
 </div>
+
+**Windows users:**  
+You can download the latest pre-built portable version of StreamWarden directly from the [latest release](https://github.com/YouG-o/StreamWarden/releases/latest).
+
+> **No installation required!**  
+> The portable zip contains everything you need:  
+> - Java runtime (no need to install Java)
+> - Streamlink (no need to install it separately)
+> - All required native dependencies  
+> Just unzip and run the executable on any recent Windows system.
+
+**Other platforms (Linux, MacOS):**  
+You need to build the application yourself.  
+See the [Build it yourself](#build-it-yourself) section below for instructions.
+
 
 ###
 
@@ -62,10 +80,6 @@ The application uses Streamlink under the hood for reliable stream capture and s
 
 </div>
 
-  For now, the only way to run the app is to build it yourself.  
-
----
-
 ### Clone the repository
 ```
 # Clone the repository
@@ -75,10 +89,12 @@ cd StreamWarden
 
 ### Then choose the method that fits your needs:
 
+---
+
 ### 1. Development Build (Cross-platform)
 
 #### Prerequisites
-- Java Development Kit (JDK) 17 or higher (not just the JRE)
+- Java Development Kit (JDK) 22 or higher
 - Maven 3.6+
 - **Streamlink** installed on your system (7.3.0 or higher for Kick support) (tested on 7.6.0)
 - **Python** (required by Streamlink)
@@ -102,12 +118,12 @@ build-windows-portable.bat
 ```
 
 This script will:
-- Automatically download and prepare all required native dependencies (Streamlink portable and JavaFX)
+- Automatically download and prepare all required native dependencies (Streamlink portable, JavaFX & Maven)
 - Build the application with Maven
 - Package everything into a portable app-image using jpackage
 
 #### How to use:
-1. Make sure you have the Java Development Kit (JDK) 17 or higher (not just the JRE) and Maven installed.
+1. Make sure you have the Java Development Kit (JDK) 22 or higher.
 2. Open a terminal in the project root directory.
 3. Run the script
 4. After completion, you will find the portable executable in the `StreamWarden_Win_Portable` folder.
@@ -119,7 +135,6 @@ This script will:
 <div align="center">
   
   # Contributors:
-  
 
   Contributions are welcome! Whether you want to fix bugs, add features, or improve documentation, your help is appreciated.
 
