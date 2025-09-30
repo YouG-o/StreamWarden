@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Refactor
+- Default output directory changed from OS-specific Downloads folder to local "downloads" directory for better portability and consistency.
+
 ---
 
 ## [0.1.0] - 2025-09-15

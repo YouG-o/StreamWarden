@@ -23,14 +23,20 @@ import java.io.InputStreamReader;
 public class AppSettings {
     
     private static final String CONFIG_DIR = "config";
+    private static final String DOWNLOADS_DIR = "downloads";
     private static final String SETTINGS_FILE = CONFIG_DIR + File.separator + "settings.json";
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     
-    // Ensure config directory exists
+    // Ensure config and downloads directories exist
     static {
         File configDir = new File(CONFIG_DIR);
         if (!configDir.exists()) {
             configDir.mkdirs();
+        }
+        
+        File downloadsDir = new File(DOWNLOADS_DIR);
+        if (!downloadsDir.exists()) {
+            downloadsDir.mkdirs();
         }
     }
     
@@ -44,19 +50,11 @@ public class AppSettings {
     private boolean recordHighFps = true;
 
     /**
-     * Get the default Downloads directory based on the operating system
+     * Get the default downloads directory (local downloads folder)
      */
     private static String getDefaultDownloadsDirectory() {
-        String os = System.getProperty("os.name").toLowerCase();
-        String userHome = System.getProperty("user.home");
-        
-        if (os.contains("win")) {
-            // Windows: %USERPROFILE%\Downloads
-            return userHome + File.separator + "Downloads" + File.separator + "StreamWarden";
-        } else {
-            // Linux/Mac: ~/Downloads
-            return userHome + File.separator + "Downloads" + File.separator + "StreamWarden";
-        }
+        File downloadsDir = new File(DOWNLOADS_DIR);
+        return downloadsDir.getAbsolutePath();
     }
 
 
