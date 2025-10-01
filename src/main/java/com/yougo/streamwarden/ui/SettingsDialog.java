@@ -118,6 +118,10 @@ public class SettingsDialog extends Dialog<Boolean> {
         // Minimize to Tray
         grid.add(new Label("Minimize to Tray:"), 0, row);
         minimizeToTrayCheckBox = new CheckBox("Minimize application to system tray instead of taskbar");
+        if (!AppSettings.isSystemTraySupported()) {
+            minimizeToTrayCheckBox.setDisable(true);
+            minimizeToTrayCheckBox.setText("Minimize to tray (Windows only)");
+        }
         grid.add(minimizeToTrayCheckBox, 1, row, 2, 1);
         row++;
         

@@ -124,7 +124,7 @@ public class AppSettings {
     }
     
     public boolean isMinimizeToTray() {
-        return minimizeToTray;
+        return isSystemTraySupported() && minimizeToTray;
     }
     
     public void setMinimizeToTray(boolean minimizeToTray) {
@@ -153,39 +153,38 @@ public class AppSettings {
      * Logs which streamlink is used and its version.
      */
     public String getStreamlinkPath() {
-    String os = System.getProperty("os.name").toLowerCase();
-    String streamlinkPath;
-    if (os.contains("win")) {
-        // Try to find Streamlink in app/bin/windows/ (packaged), then bin/windows/ (dev)
-        String[] baseDirs = { "app" + File.separator + "bin" + File.separator + "windows", "bin" + File.separator + "windows" };
-        for (String baseDir : baseDirs) {
-            File windowsBinDir = new File(baseDir);
-            if (windowsBinDir.exists() && windowsBinDir.isDirectory()) {
-                File[] candidates = windowsBinDir.listFiles((dir, name) -> name.startsWith("streamlink") && new File(dir, name).isDirectory());
-                if (candidates != null && candidates.length > 0) {
-                    // Use the first matching streamlink folder
-                    File streamlinkDir = candidates[0];
-                    String bundledPath = streamlinkDir.getPath() + File.separator + "bin" + File.separator + "streamlink.exe";
-                    File bundledFile = new File(bundledPath);
-                    if (bundledFile.exists()) {
-                        streamlinkPath = bundledPath;
-                        System.out.println("[AppSettings] Using bundled Streamlink: " + streamlinkPath + " (version: " + getStreamlinkVersion(streamlinkPath) + ")");
-                        return streamlinkPath;
+        String streamlinkPath;
+        if (isWindowsOS()) {
+            // Try to find Streamlink in app/bin/windows/ (packaged), then bin/windows/ (dev)
+            String[] baseDirs = { "app" + File.separator + "bin" + File.separator + "windows", "bin" + File.separator + "windows" };
+            for (String baseDir : baseDirs) {
+                File windowsBinDir = new File(baseDir);
+                if (windowsBinDir.exists() && windowsBinDir.isDirectory()) {
+                    File[] candidates = windowsBinDir.listFiles((dir, name) -> name.startsWith("streamlink") && new File(dir, name).isDirectory());
+                    if (candidates != null && candidates.length > 0) {
+                        // Use the first matching streamlink folder
+                        File streamlinkDir = candidates[0];
+                        String bundledPath = streamlinkDir.getPath() + File.separator + "bin" + File.separator + "streamlink.exe";
+                        File bundledFile = new File(bundledPath);
+                        if (bundledFile.exists()) {
+                            streamlinkPath = bundledPath;
+                            System.out.println("[AppSettings] Using bundled Streamlink: " + streamlinkPath + " (version: " + getStreamlinkVersion(streamlinkPath) + ")");
+                            return streamlinkPath;
+                        }
                     }
                 }
             }
+            // Fallback to system Streamlink
+            streamlinkPath = "streamlink";
+            System.out.println("[AppSettings] Using system Streamlink from PATH (version: " + getStreamlinkVersion(streamlinkPath) + ")");
+            return streamlinkPath;
+        } else {
+            // Linux/Mac: use system installation
+            streamlinkPath = "streamlink";
+            System.out.println("[AppSettings] Using system Streamlink from PATH (version: " + getStreamlinkVersion(streamlinkPath) + ")");
+            return streamlinkPath;
         }
-        // Fallback to system Streamlink
-        streamlinkPath = "streamlink";
-        System.out.println("[AppSettings] Using system Streamlink from PATH (version: " + getStreamlinkVersion(streamlinkPath) + ")");
-        return streamlinkPath;
-    } else {
-        // Linux/Mac: use system installation
-        streamlinkPath = "streamlink";
-        System.out.println("[AppSettings] Using system Streamlink from PATH (version: " + getStreamlinkVersion(streamlinkPath) + ")");
-        return streamlinkPath;
     }
-}
 
     /**
      * Get Streamlink version for a given executable path.
@@ -288,5 +287,21 @@ public class AppSettings {
             return "unknown";
         }
         return "unknown";
+    }
+
+    /**
+     * Check if the current operating system is Windows
+     */
+    public static boolean isWindowsOS() {
+        String os = System.getProperty("os.name").toLowerCase();
+        return os.contains("win");
+    }
+
+    /**
+     * Check if system tray functionality is available and supported
+     * Currently only supported on Windows due to Linux compatibility issues
+     */
+    public static boolean isSystemTraySupported() {
+        return isWindowsOS() && java.awt.SystemTray.isSupported();
     }
 }

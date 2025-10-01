@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Refactor
 - Default output directory changed from OS-specific Downloads folder to local "downloads" directory for better portability and consistency.
 
+### Fix
+- Added isWindows() utility method to centralize OS detection and restrict system tray minimization feature to Windows only. Was causing crash if activated on Linux (Debian).
+
 ---
 
 ## [0.1.0] - 2025-09-15
