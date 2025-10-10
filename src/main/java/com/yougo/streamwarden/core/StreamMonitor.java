@@ -10,6 +10,7 @@
 
 package com.yougo.streamwarden.core;
 
+import com.google.gson.Gson;
 import com.yougo.streamwarden.ChannelEntry;
 import com.yougo.streamwarden.config.AppSettings;
 import javafx.application.Platform;
@@ -406,7 +407,7 @@ public class StreamMonitor implements Runnable {
         String channelName = sanitizeFilename(channelEntry.getChannelName());
         
         // Try to get stream title if possible (simplified for now)
-        String streamTitle = "stream"; // TODO: Extract actual stream title from stream metadata
+        String streamTitle = getStreamTitle(); // Extract actual stream title from stream metadata
         String sanitizedStreamTitle = sanitizeFilename(streamTitle);
         
         return String.format("%s_%s_%s_%s.ts", 
@@ -506,6 +507,86 @@ public class StreamMonitor implements Runnable {
             // Fallback: try the old method
             process.destroyForcibly();
         }
+    }
+    
+    /**
+     * Extract stream title from stream metadata using streamlink --json
+     * Returns "stream" as fallback if title cannot be extracted
+     */
+    private String getStreamTitle() {
+        try {
+            ProcessBuilder pb = new ProcessBuilder();
+            pb.command(settings.getStreamlinkPath(), channelEntry.getChannelUrl(), "--json");
+            
+            Process process = pb.start();
+            
+            StringBuilder jsonOutput = new StringBuilder();
+            
+            // Read JSON output from streamlink
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    jsonOutput.append(line);
+                }
+            }
+            
+            // Consume error stream to prevent deadlock
+            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                while (errorReader.readLine() != null) {
+                    // Just consume stderr
+                }
+            }
+            
+            int exitCode = process.waitFor();
+            
+            if (exitCode == 0 && jsonOutput.length() > 0) {
+                // Parse JSON to extract title
+                String json = jsonOutput.toString();
+                String title = extractTitleFromJson(json);
+                
+                if (title != null && !title.trim().isEmpty()) {
+                    return title;
+                }
+            }
+            
+        } catch (Exception e) {
+            logMessage(String.format("[%s] Could not extract stream title: %s", 
+                channelEntry.getPlatform(), e.getMessage()));
+        }
+        
+        return "livestream"; // Fallback
+    }
+    
+    /**
+     * Data class for mapping Streamlink JSON metadata structure
+     */
+    private static class StreamlinkMetadata {
+        private Metadata metadata;
+        
+        private static class Metadata {
+            private String title;
+        }
+    }
+    
+    /**
+     * Extract title from Streamlink JSON output using Gson
+     * Different platforms have different JSON structures
+     */
+    private String extractTitleFromJson(String json) {
+        try {
+            Gson gson = new Gson();
+            StreamlinkMetadata streamData = gson.fromJson(json, StreamlinkMetadata.class);
+            
+            if (streamData != null && streamData.metadata != null && streamData.metadata.title != null) {
+                return streamData.metadata.title;
+            }
+            
+        } catch (Exception e) {
+            logMessage(String.format("[%s] Error parsing stream metadata: %s", 
+                channelEntry.getPlatform(), e.getMessage()));
+        }
+        
+        return null;
     }
     
     public boolean isRunning() {
