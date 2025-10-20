@@ -13,34 +13,11 @@
 
 ![StreamWarden icon](./assets/images/app_icon.png)
 
-# StreamWarden : Auto Stream Recorder
+# StreamWarden
 
-Desktop app to automatically monitor Twitch / YouTube / Kick channels and record livestreams as soon as they go live.
-
-</div>
-
-###
-
-<div align="center">
-
-## 🚀 Install
+Desktop app to monitor Twitch / YouTube / Kick channels and automatically record livestreams as soon as they go live.
 
 </div>
-
-**Windows users:**  
-You can download the latest pre-built portable version of StreamWarden directly from the [latest release](https://github.com/YouG-o/StreamWarden/releases/latest).
-
-> **No installation required!**  
-> The portable zip contains everything you need:  
-> - Java runtime (no need to install Java)
-> - Streamlink (no need to install it separately)
-> - All required native dependencies  
-> Just unzip and run the executable on any recent Windows system.
-
-**Other platforms (Linux, MacOS):**  
-You need to build the application yourself.  
-See the [Build it yourself](#build-it-yourself) section below for instructions.
-
 
 ###
 
@@ -71,12 +48,35 @@ The application uses Streamlink under the hood for reliable stream capture and s
 </div>
 
 
+###
+
+<div align="center">
+
+## 🚀 Install
+
+</div>
+
+**Windows users:**  
+You can download the latest pre-built portable version of StreamWarden directly from the [latest release](https://github.com/YouG-o/StreamWarden/releases/latest).
+
+> **No installation required!**  
+> The portable zip contains everything you need:  
+> - Java runtime (no need to install Java)
+> - Streamlink (no need to install it separately)
+> - All required native dependencies  
+> Just unzip and run the executable on any recent Windows system.
+
+**Other platforms (Linux, MacOS):**  
+You need to build the application yourself.  
+See the [Build it yourself](#build-it-yourself) section below for instructions.
+
+
 
 ###
 
 <div align="center">
   
-  # Build it yourself
+  ## Build it yourself
 
 </div>
 
@@ -134,7 +134,7 @@ This script will:
 
 <div align="center">
   
-  # Contributors:
+  ## Contributors:
 
   Contributions are welcome! Whether you want to fix bugs, add features, or improve documentation, your help is appreciated.
 
@@ -144,7 +144,7 @@ This script will:
 
 <div align="center">
   
-  # Support This Project
+  ## Support This Project
 
 </div>  
 
@@ -172,7 +172,7 @@ You can also support this project by:
 
 <div align="center">
 
-# Legal Notice ⚠️
+## Legal Notice ⚠️
 
 **Important:** Before recording any stream, make sure you have the creator's permission or that the content is not protected by copyright.
 
@@ -181,7 +181,7 @@ Always respect the terms of service of streaming platforms (Twitch, YouTube, etc
 This software is provided for educational and personal use only. I do not encourage copyright infringement and cannot be held responsible for improper use of this application.
 
 
-# LICENSE
+## LICENSE
 
 This project is licensed under the [GNU Affero General Public License v3.0](LICENSE)
 
